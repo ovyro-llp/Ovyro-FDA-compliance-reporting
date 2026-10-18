@@ -274,289 +274,282 @@ export default function OutletManagerClient({
         })}
       </div>
 
-      {/* Modal */}
+      {/* Notion Dialog Modal */}
       {isModalOpen && (
-        <div className="modal-backdrop">
+        <div className="modal-backdrop" onClick={(e) => { if (e.target === e.currentTarget) setIsModalOpen(false); }}>
           <div className="modal-card">
-            <div className="modal-header">
-              <h2>{editingOutlet ? `Edit: ${editingOutlet.name}` : "Add New Facility / Outlet"}</h2>
-              <button onClick={() => setIsModalOpen(false)} className="modal-close-btn">
+            <div className="notion-modal-header">
+              <div className="notion-modal-title-row">
+                <span className="notion-modal-icon">{icon || "🏢"}</span>
+                <h2 className="notion-modal-title">{editingOutlet ? `Edit: ${editingOutlet.name}` : "Add Facility / Outlet"}</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(false)}
+                className="notion-modal-close-btn"
+                aria-label="Close"
+              >
                 ✕
               </button>
             </div>
 
-            <form onSubmit={handleSave} className="modal-form">
-              {error && <div className="form-error-banner">{error}</div>}
+            <form onSubmit={handleSave}>
+              <div className="notion-modal-body">
+                {error && (
+                  <div className="notion-callout red" style={{ marginBottom: "14px" }}>
+                    <span className="notion-callout-icon">⚠️</span>
+                    <span>{error}</span>
+                  </div>
+                )}
 
-              <div className="form-row-2">
-                <div className="form-group">
-                  <label>Facility / Outlet Name *</label>
-                  <input
-                    type="text"
-                    required
-                    value={name}
-                    onChange={(e) => {
-                      setName(e.target.value);
-                      if (!editingOutlet && !code) {
-                        setCode(
-                          e.target.value
-                            .toUpperCase()
-                            .replace(/[^A-Z0-9]/g, "")
-                            .slice(0, 6)
-                        );
-                      }
-                    }}
-                    placeholder="e.g. Downtown Central Kitchen"
-                    className="form-input"
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Location Code</label>
-                  <input
-                    type="text"
-                    value={code}
-                    onChange={(e) => setCode(e.target.value.toUpperCase())}
-                    placeholder="e.g. DT-01"
-                    className="form-input"
-                  />
-                </div>
-              </div>
-
-              <div className="form-row-2">
-                <div className="form-group">
-                  <label>Facility Archetype / Type</label>
-                  <select
-                    value={type}
-                    onChange={(e) => setType(e.target.value)}
-                    className="form-select"
-                  >
-                    <option value="RESTAURANT">🍽️ Restaurant</option>
-                    <option value="CAFE">☕ Cafe & Coffee Bar</option>
-                    <option value="BAKERY">🥐 Bakery & Confectionery</option>
-                    <option value="CLOUD_KITCHEN">🍳 Cloud Kitchen / QSR</option>
-                    <option value="CENTRAL_PRODUCTION">🏭 Central Production / Commissary</option>
-                    <option value="WAREHOUSE">📦 Warehouse & Cold Storage</option>
-                    <option value="BAR">🍸 Bar & Lounge</option>
-                    <option value="FOOD_TRUCK">🚚 Food Truck & Mobile Unit</option>
-                    <option value="CUSTOM">✨ Custom Facility Type...</option>
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label>Icon Emoji</label>
-                  <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+                <div className="notion-form-row">
+                  <div className="notion-form-group">
+                    <label className="notion-form-label">Facility Name *</label>
                     <input
                       type="text"
-                      value={icon}
-                      onChange={(e) => setIcon(e.target.value)}
-                      placeholder="e.g. 🏢"
-                      className="form-input"
-                      style={{ width: "70px", textAlign: "center", fontSize: "1.2rem" }}
+                      required
+                      value={name}
+                      onChange={(e) => {
+                        setName(e.target.value);
+                        if (!editingOutlet && !code) {
+                          setCode(
+                            e.target.value
+                              .toUpperCase()
+                              .replace(/[^A-Z0-9]/g, "")
+                              .slice(0, 6)
+                          );
+                        }
+                      }}
+                      placeholder="e.g. Downtown Central Kitchen"
+                      className="notion-input"
                     />
-                    <div style={{ display: "flex", gap: "3px", flexWrap: "wrap" }}>
-                      {FACILITY_ICONS.slice(0, 7).map((ic) => (
-                        <button
-                          key={ic}
-                          type="button"
-                          onClick={() => setIcon(ic)}
-                          style={{
-                            border: "1px solid #cbd5e1",
-                            background: icon === ic ? "#e2e8f0" : "white",
-                            borderRadius: "4px",
-                            padding: "2px 6px",
-                            cursor: "pointer",
-                            fontSize: "0.9rem",
-                          }}
-                        >
-                          {ic}
-                        </button>
-                      ))}
+                  </div>
+
+                  <div className="notion-form-group">
+                    <label className="notion-form-label">Location Code</label>
+                    <input
+                      type="text"
+                      value={code}
+                      onChange={(e) => setCode(e.target.value.toUpperCase())}
+                      placeholder="e.g. DT-01"
+                      className="notion-input"
+                    />
+                  </div>
+                </div>
+
+                <div className="notion-form-row">
+                  <div className="notion-form-group">
+                    <label className="notion-form-label">Facility Archetype</label>
+                    <select
+                      value={type}
+                      onChange={(e) => setType(e.target.value)}
+                      className="notion-select"
+                    >
+                      <option value="RESTAURANT">🍽️ Restaurant</option>
+                      <option value="CAFE">☕ Cafe & Coffee Bar</option>
+                      <option value="BAKERY">🥐 Bakery & Confectionery</option>
+                      <option value="CLOUD_KITCHEN">🍳 Cloud Kitchen / QSR</option>
+                      <option value="CENTRAL_PRODUCTION">🏭 Central Production / Commissary</option>
+                      <option value="WAREHOUSE">📦 Warehouse & Cold Storage</option>
+                      <option value="BAR">🍸 Bar & Lounge</option>
+                      <option value="FOOD_TRUCK">🚚 Food Truck & Mobile Unit</option>
+                      <option value="CUSTOM">✨ Custom Facility Type...</option>
+                    </select>
+                  </div>
+
+                  <div className="notion-form-group">
+                    <label className="notion-form-label">Icon Emoji</label>
+                    <div className="notion-icon-picker-row">
+                      <input
+                        type="text"
+                        value={icon}
+                        onChange={(e) => setIcon(e.target.value)}
+                        className="notion-input notion-icon-input"
+                        maxLength={4}
+                      />
+                      <div className="notion-icon-presets">
+                        {FACILITY_ICONS.map((ic) => (
+                          <button
+                            key={ic}
+                            type="button"
+                            onClick={() => setIcon(ic)}
+                            className={`notion-icon-pill ${icon === ic ? "active" : ""}`}
+                          >
+                            {ic}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
 
-              {type === "CUSTOM" && (
-                <div className="form-group">
-                  <label>Custom Facility Type Name *</label>
+                {type === "CUSTOM" && (
+                  <div className="notion-form-group">
+                    <label className="notion-form-label">Custom Facility Type Name *</label>
+                    <input
+                      type="text"
+                      required
+                      value={customType}
+                      onChange={(e) => setCustomType(e.target.value)}
+                      placeholder="e.g. ROOFTOP DINING, GELATO LAB, PATISSERIE"
+                      className="notion-input"
+                    />
+                  </div>
+                )}
+
+                <div className="notion-form-group">
+                  <label className="notion-form-label">Address / Location Details</label>
                   <input
                     type="text"
-                    required
-                    value={customType}
-                    onChange={(e) => setCustomType(e.target.value)}
-                    placeholder="e.g. ROOFTOP DINING, GELATO LAB, PATISSERIE"
-                    className="form-input"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    placeholder="Street address, unit number, city..."
+                    className="notion-input"
                   />
                 </div>
-              )}
 
-              <div className="form-group">
-                <label>Address / Location Details</label>
-                <input
-                  type="text"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  placeholder="Street address, unit number, city..."
-                  className="form-input"
-                />
-              </div>
+                {/* Dynamic Shift Manager */}
+                <div className="notion-form-group" style={{ background: "#FAF9F6", padding: "12px 14px", borderRadius: "8px", border: "1px solid #EBEAE8" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                    <label className="notion-form-label" style={{ margin: 0 }}>Operational Shifts ({shifts.length})</label>
+                    <span style={{ fontSize: "11px", color: "#7D7A75" }}>Checklists are submitted per shift</span>
+                  </div>
 
-              {/* Dynamic Shift Manager */}
-              <div className="form-group shift-config-box">
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.35rem" }}>
-                  <label style={{ margin: 0 }}>Dynamic Operational Shifts ({shifts.length})</label>
-                  <span className="field-hint" style={{ margin: 0 }}>Operators log checklists per shift</span>
-                </div>
-
-                {/* Shift Quick Presets */}
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem", marginBottom: "0.6rem" }}>
-                  <span style={{ fontSize: "0.72rem", color: "#64748b", alignSelf: "center" }}>⚡ Shift Presets:</span>
-                  {[
-                    { label: "2 Shifts", items: ["Morning", "Evening"] },
-                    { label: "3 Shifts", items: ["Morning", "Afternoon", "Night"] },
-                    { label: "Restaurant Service", items: ["Breakfast", "Lunch", "Dinner", "Closing"] },
-                    { label: "Bakery / Production", items: ["Early Prep", "Baking Shift", "Packing & Dispatch"] },
-                    { label: "Cafe Service", items: ["Opening", "Mid-Day", "Closing"] },
-                  ].map((p) => (
-                    <button
-                      key={p.label}
-                      type="button"
-                      onClick={() => setShifts(p.items)}
-                      className="preset-btn"
-                      style={{ fontSize: "0.72rem", padding: "0.2rem 0.5rem" }}
-                    >
-                      {p.label}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Active Shifts Chips */}
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "0.45rem", marginBottom: "0.65rem" }}>
-                  {shifts.map((s) => (
-                    <span
-                      key={s}
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "0.35rem",
-                        background: "#e0e7ff",
-                        color: "#3730a3",
-                        fontWeight: 600,
-                        fontSize: "0.78rem",
-                        padding: "0.3rem 0.6rem",
-                        borderRadius: "999px",
-                      }}
-                    >
-                      🕒 {s}
+                  {/* Shift Quick Presets */}
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "10px" }}>
+                    <span style={{ fontSize: "11px", color: "#7D7A75", alignSelf: "center", marginRight: "2px" }}>Presets:</span>
+                    {[
+                      { label: "2 Shifts", items: ["Morning", "Evening"] },
+                      { label: "3 Shifts", items: ["Morning", "Afternoon", "Night"] },
+                      { label: "Restaurant", items: ["Breakfast", "Lunch", "Dinner", "Closing"] },
+                      { label: "Bakery", items: ["Early Prep", "Baking Shift", "Packing & Dispatch"] },
+                      { label: "Cafe", items: ["Opening", "Mid-Day", "Closing"] },
+                    ].map((p) => (
                       <button
+                        key={p.label}
                         type="button"
-                        onClick={() => handleRemoveShift(s)}
-                        style={{
-                          background: "none",
-                          border: "none",
-                          cursor: "pointer",
-                          color: "#4338ca",
-                          fontWeight: "bold",
-                          padding: "0 2px",
-                          lineHeight: 1,
-                        }}
-                        title={`Remove ${s} shift`}
+                        onClick={() => setShifts(p.items)}
+                        className="notion-preset-pill"
                       >
-                        ✕
+                        {p.label}
                       </button>
-                    </span>
-                  ))}
-                </div>
+                    ))}
+                  </div>
 
-                {/* Add Custom Shift */}
-                <div style={{ display: "flex", gap: "0.5rem" }}>
-                  <input
-                    type="text"
-                    value={customShiftInput}
-                    onChange={(e) => setCustomShiftInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        handleAddShift();
-                      }
-                    }}
-                    placeholder="Type custom shift name (e.g. Late Night, Prep Shift, Dinner) & press Add"
-                    className="form-input"
-                    style={{ flex: 1, fontSize: "0.82rem" }}
-                  />
-                  <button
-                    type="button"
-                    onClick={handleAddShift}
-                    className="btn-add-item-small"
-                    style={{ padding: "0.4rem 0.85rem" }}
-                  >
-                    ➕ Add Shift
-                  </button>
-                </div>
-              </div>
+                  {/* Active Shifts Chips */}
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "10px" }}>
+                    {shifts.map((s) => (
+                      <span key={s} className="notion-shift-chip">
+                        🕒 {s}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveShift(s)}
+                          className="notion-shift-remove-btn"
+                          title={`Remove ${s} shift`}
+                        >
+                          ✕
+                        </button>
+                      </span>
+                    ))}
+                  </div>
 
-              <div className="form-group">
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
-                  <label style={{ margin: 0 }}>Assign Report Tabs to this Facility</label>
-                  <div style={{ display: "flex", gap: "0.5rem", fontSize: "0.75rem" }}>
+                  {/* Add Custom Shift */}
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    <input
+                      type="text"
+                      value={customShiftInput}
+                      onChange={(e) => setCustomShiftInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          handleAddShift();
+                        }
+                      }}
+                      placeholder="Add custom shift (e.g. Night Prep, Late Cleaning) & press Add"
+                      className="notion-input"
+                      style={{ flex: 1, fontSize: "12.5px" }}
+                    />
                     <button
                       type="button"
-                      onClick={() => setSelectedTemplates(allTemplates.map((t) => t.id))}
-                      className="btn-link-small"
+                      onClick={handleAddShift}
+                      className="notion-preset-pill"
+                      style={{ padding: "6px 12px", fontWeight: 600 }}
                     >
-                      Select All
-                    </button>
-                    <span>•</span>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedTemplates([])}
-                      className="btn-link-small"
-                    >
-                      Clear All
+                      + Add Shift
                     </button>
                   </div>
                 </div>
 
-                <div className="outlet-checkboxes-grid">
-                  {allTemplates.length === 0 ? (
-                    <span className="text-muted text-sm">No report tabs created yet. You can create report tabs in the Report Tabs Manager.</span>
-                  ) : (
-                    allTemplates.map((t) => (
-                      <label key={t.id} className="outlet-checkbox-item">
-                        <input
-                          type="checkbox"
-                          checked={selectedTemplates.includes(t.id)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedTemplates([...selectedTemplates, t.id]);
-                            } else {
-                              setSelectedTemplates(selectedTemplates.filter((id) => id !== t.id));
-                            }
-                          }}
-                        />
-                        <span>
-                          {t.icon} {t.title}
-                        </span>
-                      </label>
-                    ))
-                  )}
+                {/* Assigned Templates */}
+                <div className="notion-form-group">
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                    <label className="notion-form-label" style={{ margin: 0 }}>Assign Report Tabs to this Facility</label>
+                    <div style={{ display: "flex", gap: "8px", fontSize: "11px" }}>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedTemplates(allTemplates.map((t) => t.id))}
+                        className="notion-preset-pill"
+                      >
+                        Select All
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedTemplates([])}
+                        className="notion-preset-pill"
+                      >
+                        Clear All
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="notion-template-checkbox-grid">
+                    {allTemplates.length === 0 ? (
+                      <span style={{ fontSize: "12px", color: "#7D7A75" }}>No report tabs created yet.</span>
+                    ) : (
+                      allTemplates.map((t) => {
+                        const isChecked = selectedTemplates.includes(t.id);
+                        return (
+                          <label
+                            key={t.id}
+                            className={`notion-template-checkbox-item ${isChecked ? "checked" : ""}`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedTemplates([...selectedTemplates, t.id]);
+                                } else {
+                                  setSelectedTemplates(selectedTemplates.filter((id) => id !== t.id));
+                                }
+                              }}
+                              style={{ accentColor: "#2C2C2B" }}
+                            />
+                            <span>
+                              {t.icon} {t.title}
+                            </span>
+                          </label>
+                        );
+                      })
+                    )}
+                  </div>
                 </div>
               </div>
 
-
-              <div className="modal-actions-bar">
+              <div className="notion-modal-footer">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="btn-cancel"
+                  className="notion-btn-secondary"
+                  style={{ padding: "8px 16px" }}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
-                  className="btn-primary-save"
+                  className="notion-save-button"
+                  style={{ width: "auto", padding: "8px 20px" }}
                 >
                   {saving ? "Saving Facility..." : editingOutlet ? "Update Facility" : "Add Facility"}
                 </button>

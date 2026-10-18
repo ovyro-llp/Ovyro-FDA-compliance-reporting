@@ -82,6 +82,73 @@ export default function DynamicFormRenderer({
   const [showPaywall, setShowPaywall] = useState<boolean>(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
+  // Dual View & Staff Configuration State
+  const canEditTemplate = useMemo(() => {
+    return ["ORG_ADMIN", "SUPER_ADMIN", "ADMIN", "SUPERVISOR", "MANAGER"].includes(currentUser?.role);
+  }, [currentUser?.role]);
+
+  const [viewMode, setViewMode] = useState<"AUDIT" | "ADMIN">("AUDIT");
+  const [editableSchema, setEditableSchema] = useState<any>(parsedSchema);
+  const [allStaffList, setAllStaffList] = useState<string[]>(availableStaff);
+  const [isSavingSchema, setIsSavingSchema] = useState<boolean>(false);
+  const [newCleanerName, setNewCleanerName] = useState<string>("");
+  const [newCleanerRole, setNewCleanerRole] = useState<string>("Kitchen Steward");
+
+  useEffect(() => {
+    setEditableSchema(parsedSchema);
+  }, [parsedSchema]);
+
+  const handleAddGroundStaff = async () => {
+    const clean = newCleanerName.trim();
+    if (!clean) return;
+    try {
+      const res = await fetch("/api/admin/staff", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: clean, role: newCleanerRole }),
+      });
+      if (res.ok) {
+        setAllStaffList((prev) => (prev.includes(clean) ? prev : [...prev, clean]));
+        setNewCleanerName("");
+        setMessage({ type: "success", text: `Added "${clean}" to cleaning roster.` });
+      }
+    } catch (e: any) {
+      setMessage({ type: "error", text: e.message || "Failed to add ground staff" });
+    }
+  };
+
+  const handleSaveSchema = async () => {
+    setIsSavingSchema(true);
+    setMessage(null);
+    try {
+      const res = await fetch(`/api/admin/templates/${template.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ schema: editableSchema }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Failed to save template configuration");
+
+      setMessage({ type: "success", text: "Staff assignments & template configuration saved successfully!" });
+      router.refresh();
+      setViewMode("AUDIT");
+    } catch (err: any) {
+      setMessage({ type: "error", text: err.message || "Failed to save configuration" });
+    } finally {
+      setIsSavingSchema(false);
+    }
+  };
+
+  function getEligibleStaffForItem(item: any, sec?: any) {
+    if (item?.assignedStaff && Array.isArray(item.assignedStaff) && item.assignedStaff.length > 0) {
+      return item.assignedStaff;
+    }
+    if (sec?.assignedStaff && Array.isArray(sec.assignedStaff) && sec.assignedStaff.length > 0) {
+      return sec.assignedStaff;
+    }
+    return allStaffList.length > 0 ? allStaffList : ["Staff Member"];
+  }
+
   // Load existing submission for selected date & shift
   useEffect(() => {
     let isCancelled = false;
@@ -664,7 +731,245 @@ function getInitialDataForSchema(
         </div>
       )}
 
-      {loading ? (
+      {/* ─── Dual View Switcher (Audit View vs Admin/Edit View) ───────────────── */}
+      {canEditTemplate && (
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", flexWrap: "wrap", gap: "8px" }}>
+          <div className="notion-view-switcher" style={{ marginBottom: 0 }}>
+            <button
+              type="button"
+              className={`notion-view-btn ${viewMode === "AUDIT" ? "active" : ""}`}
+              onClick={() => setViewMode("AUDIT")}
+            >
+              📝 Audit & Reporting View
+            </button>
+            <button
+              type="button"
+              className={`notion-view-btn ${viewMode === "ADMIN" ? "active" : ""}`}
+              onClick={() => setViewMode("ADMIN")}
+            >
+              ⚙️ Edit / Assign Staff View
+            </button>
+          </div>
+          {viewMode === "ADMIN" && (
+            <button
+              type="button"
+              onClick={handleSaveSchema}
+              disabled={isSavingSchema}
+              className="notion-save-button"
+              style={{ width: "auto", padding: "6px 16px", fontSize: "12.5px" }}
+            >
+              {isSavingSchema ? "Saving..." : "💾 Save Staff Assignments"}
+            </button>
+          )}
+        </div>
+      )}
+
+      {viewMode === "ADMIN" ? (
+        <div className="notion-admin-editor-wrap">
+          {/* Ground Staff Roster & Inline Add */}
+          <div className="notion-admin-section-card">
+            <div className="notion-admin-section-header">
+              <div>
+                <h3 className="notion-admin-section-title">👥 Ground Staff Roster ({allStaffList.length} members)</h3>
+                <span style={{ fontSize: "12px", color: "#7D7A75" }}>
+                  Active team members and floor cleaners available to be assigned to checklist tasks
+                </span>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "12px" }}>
+              <input
+                type="text"
+                value={newCleanerName}
+                onChange={(e) => setNewCleanerName(e.target.value)}
+                placeholder="New Cleaner / Staff Name (e.g. Ramesh Kumar)"
+                className="notion-input"
+                style={{ flex: 1, minWidth: "180px" }}
+              />
+              <input
+                type="text"
+                value={newCleanerRole}
+                onChange={(e) => setNewCleanerRole(e.target.value)}
+                placeholder="Role (e.g. Kitchen Steward)"
+                className="notion-input"
+                style={{ width: "180px" }}
+              />
+              <button
+                type="button"
+                onClick={handleAddGroundStaff}
+                className="notion-preset-pill"
+                style={{ padding: "8px 14px", fontWeight: 600, fontSize: "12px" }}
+              >
+                + Add Ground Staff
+              </button>
+            </div>
+
+            <div className="notion-staff-pill-wrap">
+              {allStaffList.map((st) => (
+                <span key={st} className="notion-shift-chip">
+                  👤 {st}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* Section & Checkpoint Staff Assignment Editor */}
+          {(editableSchema.sections || []).map((sec: any, secIdx: number) => {
+            const secItems = sec.items || [];
+            const secStaff: string[] = Array.isArray(sec.assignedStaff) ? sec.assignedStaff : [];
+
+            const toggleSectionStaff = (staffName: string) => {
+              const updatedSections = [...(editableSchema.sections || [])];
+              const current = [...secStaff];
+              const next = current.includes(staffName)
+                ? current.filter((s) => s !== staffName)
+                : [...current, staffName];
+              updatedSections[secIdx] = { ...sec, assignedStaff: next };
+              setEditableSchema({ ...editableSchema, sections: updatedSections });
+            };
+
+            return (
+              <div key={sec.id || secIdx} className="notion-admin-section-card">
+                <div className="notion-admin-section-header">
+                  <div style={{ flex: 1, minWidth: "200px" }}>
+                    <input
+                      type="text"
+                      value={sec.title}
+                      onChange={(e) => {
+                        const updatedSections = [...editableSchema.sections];
+                        updatedSections[secIdx] = { ...sec, title: e.target.value };
+                        setEditableSchema({ ...editableSchema, sections: updatedSections });
+                      }}
+                      className="notion-input"
+                      style={{ fontWeight: 650, fontSize: "15px" }}
+                    />
+                  </div>
+                  <span style={{ fontSize: "12px", color: "#7D7A75" }}>
+                    {secItems.length} checkpoints
+                  </span>
+                </div>
+
+                <div style={{ marginBottom: "14px", background: "#F7F6F3", padding: "10px 12px", borderRadius: "6px" }}>
+                  <span style={{ fontSize: "11px", fontWeight: 600, color: "#7D7A75", textTransform: "uppercase", display: "block", marginBottom: "6px" }}>
+                    Section Default Staff Pool (Visible for all items in this section):
+                  </span>
+                  <div className="notion-staff-pill-wrap">
+                    {allStaffList.map((st) => {
+                      const isSelected = secStaff.includes(st);
+                      return (
+                        <button
+                          key={st}
+                          type="button"
+                          onClick={() => toggleSectionStaff(st)}
+                          className={`notion-staff-pill ${isSelected ? "active" : ""}`}
+                        >
+                          {isSelected ? "✓" : "+"} {st}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div>
+                  {secItems.map((item: any, itIdx: number) => {
+                    const itemStaff: string[] = Array.isArray(item.assignedStaff) ? item.assignedStaff : [];
+
+                    const toggleItemStaff = (staffName: string) => {
+                      const updatedSections = [...editableSchema.sections];
+                      const updatedItems = [...secItems];
+                      const current = [...itemStaff];
+                      const next = current.includes(staffName)
+                        ? current.filter((s) => s !== staffName)
+                        : [...current, staffName];
+                      updatedItems[itIdx] = { ...item, assignedStaff: next };
+                      updatedSections[secIdx] = { ...sec, items: updatedItems };
+                      setEditableSchema({ ...editableSchema, sections: updatedSections });
+                    };
+
+                    return (
+                      <div key={item.id || itIdx} className="notion-admin-item-row">
+                        <div className="notion-admin-item-top">
+                          <input
+                            type="text"
+                            value={item.name || item.task || ""}
+                            onChange={(e) => {
+                              const updatedSections = [...editableSchema.sections];
+                              const updatedItems = [...secItems];
+                              updatedItems[itIdx] = { ...item, name: e.target.value, task: e.target.value };
+                              updatedSections[secIdx] = { ...sec, items: updatedItems };
+                              setEditableSchema({ ...editableSchema, sections: updatedSections });
+                            }}
+                            className="notion-input"
+                            style={{ flex: 1, fontWeight: 600, fontSize: "14px" }}
+                          />
+                          <select
+                            value={item.defaultAssignee || ""}
+                            onChange={(e) => {
+                              const updatedSections = [...editableSchema.sections];
+                              const updatedItems = [...secItems];
+                              updatedItems[itIdx] = { ...item, defaultAssignee: e.target.value };
+                              updatedSections[secIdx] = { ...sec, items: updatedItems };
+                              setEditableSchema({ ...editableSchema, sections: updatedSections });
+                            }}
+                            className="notion-select"
+                            style={{ width: "160px", fontSize: "12px" }}
+                          >
+                            <option value="">Default cleaner...</option>
+                            {allStaffList.map((st) => (
+                              <option key={st} value={st}>{st}</option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div>
+                          <span style={{ fontSize: "11px", color: "#7D7A75", fontWeight: 600 }}>
+                            Staff who clean this specific item (Select to restrict dropdown, or leave empty to use section pool):
+                          </span>
+                          <div className="notion-staff-pill-wrap">
+                            {allStaffList.map((st) => {
+                              const isSelected = itemStaff.includes(st);
+                              return (
+                                <button
+                                  key={st}
+                                  type="button"
+                                  onClick={() => toggleItemStaff(st)}
+                                  className={`notion-staff-pill ${isSelected ? "active" : ""}`}
+                                >
+                                  {isSelected ? "✓" : "+"} {st}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+
+          <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end", marginTop: "12px" }}>
+            <button
+              type="button"
+              onClick={() => setViewMode("AUDIT")}
+              className="notion-btn-secondary"
+              style={{ padding: "9px 18px" }}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleSaveSchema}
+              disabled={isSavingSchema}
+              className="notion-save-button"
+              style={{ width: "auto", padding: "9px 24px" }}
+            >
+              {isSavingSchema ? "Saving Configuration..." : "💾 Save Form & Staff Assignments"}
+            </button>
+          </div>
+        </div>
+      ) : loading ? (
         <div className="loading-card">
           <div className="spinner" />
           <p>Loading audit checklist & historical data...</p>
@@ -796,17 +1101,38 @@ function getInitialDataForSchema(
                           !isNaN(parseFloat(cp.temp)) &&
                           ((min !== undefined && parseFloat(cp.temp) < min) || (max !== undefined && parseFloat(cp.temp) > max));
 
+                        const eligibleStaff = getEligibleStaffForItem(item, sec);
+
                         return (
                           <div key={item.id || idx} className={`notion-checkpoint-card ${isBreach ? "card-breach" : ""}`}>
                             <div className="notion-checkpoint-top">
                               <div className="notion-checkpoint-info">
-                                <h3 className="notion-checkpoint-title">{item.name || item.task}</h3>
+                                <div className="notion-checkpoint-title-row">
+                                  <span className="notion-item-index">{idx + 1}</span>
+                                  <h3 className="notion-checkpoint-title">{item.name || item.task}</h3>
+                                </div>
                                 {item.hint && <div className="notion-checkpoint-hint">{item.hint}</div>}
                                 {(min !== undefined || max !== undefined) && (
-                                  <span className="notion-checkpoint-spec">
-                                    Safe: {min !== undefined ? `${min}` : "-∞"} to {max !== undefined ? `${max}` : "+∞"} {unit}
-                                  </span>
+                                  <div style={{ paddingLeft: "28px" }}>
+                                    <span className="notion-checkpoint-spec">
+                                      Safe: {min !== undefined ? `${min}` : "-∞"} to {max !== undefined ? `${max}` : "+∞"} {unit}
+                                    </span>
+                                  </div>
                                 )}
+                                <div className="notion-staff-row">
+                                  <span className="notion-staff-label">🧹 Cleaned by:</span>
+                                  <select
+                                    value={cp.cleanedBy || cp.assignee || eligibleStaff[0]}
+                                    onChange={(e) => updateCp({ cleanedBy: e.target.value, assignee: e.target.value })}
+                                    className="notion-staff-select"
+                                  >
+                                    {eligibleStaff.map((st: string) => (
+                                      <option key={st} value={st}>
+                                        {st}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
                               </div>
 
                               <div className="notion-checkpoint-action">
@@ -926,23 +1252,44 @@ function getInitialDataForSchema(
               </div>
 
               <div>
-                {(formData.items || []).map((item: any, idx: number) => (
-                  <div key={item.id || idx} className="notion-checkpoint-card">
-                    <div className="notion-checkpoint-top">
-                      <div className="notion-checkpoint-info">
-                        <h3 className="notion-checkpoint-title">{item.name}</h3>
+                {(formData.items || []).map((item: any, idx: number) => {
+                  const eligibleStaff = getEligibleStaffForItem(item, sections[0]);
+                  return (
+                    <div key={item.id || idx} className="notion-checkpoint-card">
+                      <div className="notion-checkpoint-top">
+                        <div className="notion-checkpoint-info">
+                          <div className="notion-checkpoint-title-row">
+                            <span className="notion-item-index">{idx + 1}</span>
+                            <h3 className="notion-checkpoint-title">{item.name}</h3>
+                          </div>
+                          <div className="notion-staff-row">
+                            <span className="notion-staff-label">🧹 Cleaned by:</span>
+                            <select
+                              value={item.cleanedBy || eligibleStaff[0]}
+                              onChange={(e) => {
+                                const newItems = [...(formData.items || [])];
+                                newItems[idx] = { ...item, cleanedBy: e.target.value };
+                                setFormData({ ...formData, items: newItems });
+                              }}
+                              className="notion-staff-select"
+                            >
+                              {eligibleStaff.map((st: string) => (
+                                <option key={st} value={st}>{st}</option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                        <div className="notion-checkpoint-action">
+                          <YesNoNaToggle
+                            value={item.status}
+                            onChange={(val) => {
+                              const newItems = [...(formData.items || [])];
+                              newItems[idx] = { ...item, status: val };
+                              setFormData({ ...formData, items: newItems });
+                            }}
+                          />
+                        </div>
                       </div>
-                      <div className="notion-checkpoint-action">
-                        <YesNoNaToggle
-                          value={item.status}
-                          onChange={(val) => {
-                            const newItems = [...(formData.items || [])];
-                            newItems[idx] = { ...item, status: val };
-                            setFormData({ ...formData, items: newItems });
-                          }}
-                        />
-                      </div>
-                    </div>
                     {(item.status === "NO" || item.notes) && (
                       <div className={`notion-callout ${item.status === "NO" ? "red" : "yellow"}`}>
                         <span className="notion-callout-icon">{item.status === "NO" ? "🚨" : "📝"}</span>
@@ -960,8 +1307,9 @@ function getInitialDataForSchema(
                       </div>
                     )}
                   </div>
-                ))}
-              </div>
+                );
+              })}
+            </div>
             </div>
           )}
 
@@ -1018,11 +1366,31 @@ function getInitialDataForSchema(
                         const globalIdx = (formData.completedItems || []).findIndex(
                           (x: any) => x.id === ci.id
                         );
+                        const eligibleStaff = getEligibleStaffForItem(ci, sec);
                         return (
                           <div key={ci.id || idx} className="notion-checkpoint-card">
                             <div className="notion-checkpoint-top">
                               <div className="notion-checkpoint-info">
-                                <h3 className="notion-checkpoint-title">{ci.name}</h3>
+                                <div className="notion-checkpoint-title-row">
+                                  <span className="notion-item-index">{idx + 1}</span>
+                                  <h3 className="notion-checkpoint-title">{ci.name}</h3>
+                                </div>
+                                <div className="notion-staff-row">
+                                  <span className="notion-staff-label">🧹 Sanitized by:</span>
+                                  <select
+                                    value={ci.cleanedBy || eligibleStaff[0]}
+                                    onChange={(e) => {
+                                      const newItems = [...formData.completedItems];
+                                      newItems[globalIdx] = { ...ci, cleanedBy: e.target.value };
+                                      setFormData({ ...formData, completedItems: newItems });
+                                    }}
+                                    className="notion-staff-select"
+                                  >
+                                    {eligibleStaff.map((st: string) => (
+                                      <option key={st} value={st}>{st}</option>
+                                    ))}
+                                  </select>
+                                </div>
                               </div>
                               <div className="notion-checkpoint-action">
                                 <YesNoNaToggle
@@ -1122,18 +1490,41 @@ function getInitialDataForSchema(
                     (!isNaN(mNum) && (mNum < min || mNum > max)) ||
                     (!isNaN(eNum) && (eNum < min || eNum > max));
 
+                  const eligibleStaff = getEligibleStaffForItem(reading, sections[0]);
+
                   return (
                     <div key={reading.id || idx} className={`notion-checkpoint-card ${isBreach ? "card-breach" : ""}`}>
                       <div className="notion-checkpoint-top">
                         <div className="notion-checkpoint-info">
-                          <h3 className="notion-checkpoint-title">
-                            {reading.name}
-                            {reading.machineNumber && ` #${reading.machineNumber}`}
-                          </h3>
+                          <div className="notion-checkpoint-title-row">
+                            <span className="notion-item-index">{idx + 1}</span>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <h3 className="notion-checkpoint-title">
+                                {reading.name}
+                                {reading.machineNumber && ` #${reading.machineNumber}`}
+                              </h3>
+                            </div>
+                            <span className="notion-checkpoint-spec">
+                              {reading.referenceTemp || `${min}°C to ${max}°C`}
+                            </span>
+                          </div>
+                          <div className="notion-staff-row">
+                            <span className="notion-staff-label">❄️ Maintained / Cleaned by:</span>
+                            <select
+                              value={reading.maintainedBy || reading.cleanedBy || eligibleStaff[0]}
+                              onChange={(e) => {
+                                const newReadings = [...(formData.readings || [])];
+                                newReadings[idx] = { ...reading, maintainedBy: e.target.value, cleanedBy: e.target.value };
+                                setFormData({ ...formData, readings: newReadings });
+                              }}
+                              className="notion-staff-select"
+                            >
+                              {eligibleStaff.map((st: string) => (
+                                <option key={st} value={st}>{st}</option>
+                              ))}
+                            </select>
+                          </div>
                         </div>
-                        <span className="notion-checkpoint-spec">
-                          {reading.referenceTemp || `${min}°C to ${max}°C`}
-                        </span>
                       </div>
 
                       <div className="notion-temp-slots">
@@ -1215,23 +1606,44 @@ function getInitialDataForSchema(
               </div>
 
               <div>
-                {(formData.locations || []).map((loc: any, idx: number) => (
-                  <div key={loc.id || idx} className="notion-checkpoint-card">
-                    <div className="notion-checkpoint-top">
-                      <div className="notion-checkpoint-info">
-                        <h3 className="notion-checkpoint-title">{loc.location}</h3>
+                {(formData.locations || []).map((loc: any, idx: number) => {
+                  const eligibleStaff = getEligibleStaffForItem(loc, sections[0]);
+                  return (
+                    <div key={loc.id || idx} className="notion-checkpoint-card">
+                      <div className="notion-checkpoint-top">
+                        <div className="notion-checkpoint-info">
+                          <div className="notion-checkpoint-title-row">
+                            <span className="notion-item-index">{idx + 1}</span>
+                            <h3 className="notion-checkpoint-title">{loc.location}</h3>
+                          </div>
+                          <div className="notion-staff-row">
+                            <span className="notion-staff-label">🧹 Cleaned by:</span>
+                            <select
+                              value={loc.cleanedBy || eligibleStaff[0]}
+                              onChange={(e) => {
+                                const newLocs = [...(formData.locations || [])];
+                                newLocs[idx] = { ...loc, cleanedBy: e.target.value };
+                                setFormData({ ...formData, locations: newLocs });
+                              }}
+                              className="notion-staff-select"
+                            >
+                              {eligibleStaff.map((st: string) => (
+                                <option key={st} value={st}>{st}</option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                        <div className="notion-checkpoint-action">
+                          <YesNoNaToggle
+                            value={loc.status}
+                            onChange={(val) => {
+                              const newLocs = [...(formData.locations || [])];
+                              newLocs[idx] = { ...loc, status: val };
+                              setFormData({ ...formData, locations: newLocs });
+                            }}
+                          />
+                        </div>
                       </div>
-                      <div className="notion-checkpoint-action">
-                        <YesNoNaToggle
-                          value={loc.status}
-                          onChange={(val) => {
-                            const newLocs = [...(formData.locations || [])];
-                            newLocs[idx] = { ...loc, status: val };
-                            setFormData({ ...formData, locations: newLocs });
-                          }}
-                        />
-                      </div>
-                    </div>
                     {(loc.status === "NO" || loc.notes) && (
                       <div className={`notion-callout ${loc.status === "NO" ? "red" : "yellow"}`}>
                         <span className="notion-callout-icon">{loc.status === "NO" ? "🚨" : "📝"}</span>
@@ -1249,8 +1661,9 @@ function getInitialDataForSchema(
                       </div>
                     )}
                   </div>
-                ))}
-              </div>
+                );
+              })}
+            </div>
             </div>
           )}
 
@@ -1291,28 +1704,51 @@ function getInitialDataForSchema(
               </div>
 
               <div>
-                {(formData.tasks || []).map((task: any, idx: number) => (
-                  <div key={task.id || idx} className="notion-checkpoint-card">
-                    <div className="notion-checkpoint-top">
-                      <div className="notion-checkpoint-info">
-                        <h3 className="notion-checkpoint-title">{task.task}</h3>
-                        {task.category && (
-                          <span className="notion-checkpoint-spec" style={{ marginTop: '2px' }}>
-                            {task.category}
-                          </span>
-                        )}
+                {(formData.tasks || []).map((task: any, idx: number) => {
+                  const eligibleStaff = getEligibleStaffForItem(task, sections[0]);
+                  return (
+                    <div key={task.id || idx} className="notion-checkpoint-card">
+                      <div className="notion-checkpoint-top">
+                        <div className="notion-checkpoint-info">
+                          <div className="notion-checkpoint-title-row">
+                            <span className="notion-item-index">{idx + 1}</span>
+                            <h3 className="notion-checkpoint-title">{task.task}</h3>
+                          </div>
+                          {task.category && (
+                            <div style={{ paddingLeft: "28px" }}>
+                              <span className="notion-checkpoint-spec" style={{ marginTop: "2px" }}>
+                                {task.category}
+                              </span>
+                            </div>
+                          )}
+                          <div className="notion-staff-row">
+                            <span className="notion-staff-label">🔧 Completed by:</span>
+                            <select
+                              value={task.completedBy || eligibleStaff[0]}
+                              onChange={(e) => {
+                                const newTasks = [...(formData.tasks || [])];
+                                newTasks[idx] = { ...task, completedBy: e.target.value };
+                                setFormData({ ...formData, tasks: newTasks });
+                              }}
+                              className="notion-staff-select"
+                            >
+                              {eligibleStaff.map((st: string) => (
+                                <option key={st} value={st}>{st}</option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                        <div className="notion-checkpoint-action">
+                          <YesNoNaToggle
+                            value={task.status}
+                            onChange={(val) => {
+                              const newTasks = [...(formData.tasks || [])];
+                              newTasks[idx] = { ...task, status: val };
+                              setFormData({ ...formData, tasks: newTasks });
+                            }}
+                          />
+                        </div>
                       </div>
-                      <div className="notion-checkpoint-action">
-                        <YesNoNaToggle
-                          value={task.status}
-                          onChange={(val) => {
-                            const newTasks = [...(formData.tasks || [])];
-                            newTasks[idx] = { ...task, status: val };
-                            setFormData({ ...formData, tasks: newTasks });
-                          }}
-                        />
-                      </div>
-                    </div>
                     {(task.status === "NO" || task.notes) && (
                       <div className={`notion-callout ${task.status === "NO" ? "red" : "yellow"}`}>
                         <span className="notion-callout-icon">{task.status === "NO" ? "🚨" : "📝"}</span>
@@ -1330,8 +1766,9 @@ function getInitialDataForSchema(
                       </div>
                     )}
                   </div>
-                ))}
-              </div>
+                );
+              })}
+            </div>
             </div>
           )}
 

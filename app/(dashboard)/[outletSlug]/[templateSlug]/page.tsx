@@ -83,13 +83,36 @@ export default async function DynamicSheetPage({ params }: PageProps) {
     notFound();
   }
 
-  // Get active staff for this organization/outlet
-  const staff = await prisma.user.findMany({
-    where: { organizationId, isActive: true },
-    select: { name: true },
-  });
+  // Get active staff for this organization/outlet (registered users + non-login ground staff)
+  const [users, org] = await Promise.all([
+    prisma.user.findMany({
+      where: { organizationId, isActive: true },
+      select: { name: true },
+      orderBy: { name: "asc" },
+    }),
+    prisma.organization.findUnique({
+      where: { id: organizationId },
+      select: { settings: true },
+    }),
+  ]);
 
-  const availableStaff = staff.map((s) => s.name).filter(Boolean);
+  const parsedSettings = safeJson(org?.settings, {});
+  const groundStaffRoster: Array<{ name: string }> = Array.isArray(parsedSettings.staffRoster)
+    ? parsedSettings.staffRoster
+    : [];
+
+  const rawStaffList = [
+    ...users.map((u) => u.name),
+    ...groundStaffRoster.map((g) => g.name),
+  ].filter(Boolean);
+
+  const seen = new Set<string>();
+  const availableStaff = rawStaffList.filter((name) => {
+    const lower = name.trim().toLowerCase();
+    if (seen.has(lower)) return false;
+    seen.add(lower);
+    return true;
+  });
 
   const parsedShifts = safeJson(activeOutlet.shifts, ["Morning", "Evening"]);
   const parsedSchema = safeJson(template.schema, { sections: [] });
