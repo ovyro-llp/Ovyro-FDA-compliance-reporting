@@ -1,56 +1,57 @@
 # Railway Deployment Guide — Reporting SaaS
 
-This guide explains how to deploy **Reporting Software** as a multi-tenant SaaS application on [Railway](https://railway.app) with a PostgreSQL database.
+This guide explains how to deploy **Reporting Software** as a production-grade multi-tenant SaaS application on [Railway](https://railway.app) with PostgreSQL.
 
 ---
 
 ## 1. Create a New Project on Railway
 
 1. Go to your [Railway Dashboard](https://railway.app/dashboard).
-2. Click **New Project** $\rightarrow$ **Provision PostgreSQL**.
-3. Railway will provision a dedicated PostgreSQL database and automatically expose `DATABASE_URL`.
+2. Click **New Project** $\rightarrow$ **Provision PostgreSQL** (or connect your existing external Supabase database).
+3. If using Railway PostgreSQL, Railway automatically provides the `DATABASE_URL` connection variable.
 
 ---
 
 ## 2. Deploy from GitHub
 
-1. Click **+ New** $\rightarrow$ **GitHub Repo**.
-2. Select your newly pushed GitHub repository containing this project.
-3. Railway will automatically detect Next.js and read [railway.json](file:///Users/hrushi/Downloads/Desktop%20offline/vibe%20coding/Reporting%20software%20/hygiene-app/railway.json).
+1. In Railway, click **+ New** $\rightarrow$ **GitHub Repo**.
+2. Select your repository (`Ovyro-reporting`).
+3. Railway will automatically detect Next.js and apply the configuration in [railway.json](file:///Users/hrushi/Downloads/Desktop%20offline/vibe%20coding/Reporting%20software%20/hygiene-app/railway.json).
 
 ---
 
 ## 3. Configure Environment Variables in Railway
 
-In your Railway web service settings under **Variables**, set the following:
+In your web service settings under **Variables**, set:
 
-| Variable | Recommended Value | Notes |
+| Variable | Recommended Value | Description |
 | :--- | :--- | :--- |
-| `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` | Connects directly to the Railway PostgreSQL database |
-| `AUTH_SECRET` | Generate a 32-character random string | e.g. `openssl rand -base64 32` |
-| `NEXTAUTH_URL` | `https://${{RAILWAY_PUBLIC_DOMAIN}}` | Your Railway public domain |
-| `NODE_ENV` | `production` | Production mode |
+| `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` (or Supabase pooled connection string) | Primary database connection |
+| `DIRECT_URL` | Optional: `${{Postgres.DATABASE_URL}}` (or Supabase direct 5432 string) | Direct connection for schema migrations |
+| `AUTH_SECRET` | Generate a 32+ character random secret string | e.g. `openssl rand -base64 32` |
+| `NEXTAUTH_URL` | `https://${{RAILWAY_PUBLIC_DOMAIN}}` | Your Railway public application domain |
+| `NODE_ENV` | `production` | Enables production optimizations |
 
 ---
 
-## 4. Automatic Database Sync & Seeding
+## 4. Production Build & Startup Workflow
 
-The provided [railway.json](file:///Users/hrushi/Downloads/Desktop%20offline/vibe%20coding/Reporting%20software%20/hygiene-app/railway.json) automatically executes:
-1. `npx prisma generate && npm run build` during build time.
-2. `npx prisma db push` and `npm run db:seed` during first deployment start to populate default organizations, outlets, and templates.
+The project includes an optimized [railway.json](file:///Users/hrushi/Downloads/Desktop%20offline/vibe%20coding/Reporting%20software%20/hygiene-app/railway.json) configuration:
+1. **Build Step (`npx prisma generate && npm run build`)**: Generates Prisma client types and compiles the production Next.js application.
+2. **Deploy Step (`npx prisma db push && npm run db:seed && npm start`)**:
+   - `prisma db push` synchronizes all schema models with PostgreSQL.
+   - `db:seed` contains an automated safety guard: it only seeds starter templates and default admin account if the database is brand new. On subsequent restarts or redeploys, it protects and preserves all client data.
+   - `npm start` binds to `0.0.0.0` and listens on Railway's dynamic `$PORT`.
 
 ---
 
-## 5. Default Demo Credentials
+## 5. Logging In
 
-Once deployed, you can immediately log in with:
+For production security, demo autofill buttons have been removed from the public sign-in page.
 
-- **Admin Account**:
-  - Email: `admin@reporting.app`
-  - Password: `Admin@123`
-- **Supervisor Account**:
-  - Email: `aboli@reporting.app`
-  - Password: `Pnr@123`
-- **Staff / Operator Account**:
-  - Email: `bharti@reporting.app`
-  - Password: `Pnr@123`
+- **Initial Admin Account (First Deployment)**:
+  - **Email**: `admin@reporting.app`
+  - **Password**: `Admin@123`
+  - *(Recommended: Change email & password from the Admin panel after first login).*
+- **Self-Service Registration**:
+  - Any new customer/restaurant operator can click **✨ Create Account** directly on `/login` to register a workspace with automated facility provisioning.

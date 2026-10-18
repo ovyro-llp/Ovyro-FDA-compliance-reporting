@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { NextRequest, NextResponse } from "next/server";
-import { resolveOrganizationId, resolveUserId } from "@/lib/permissions";
+import { resolveOrganizationId, resolveUserId, userHasPermission } from "@/lib/permissions";
 
 function safeJson(val: any, fallback: any = []) {
   if (typeof val !== "string") return val ?? fallback;
@@ -61,9 +61,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const user = session.user as { organizationId: string; role: string; email?: string; id?: string };
-  if (user.role !== "ORG_ADMIN" && user.role !== "SUPER_ADMIN" && user.role !== "ADMIN") {
-    return NextResponse.json({ error: "Forbidden: Admin access required" }, { status: 403 });
+  const user = session.user as any;
+  const canManage =
+    user.role === "ORG_ADMIN" ||
+    user.role === "SUPER_ADMIN" ||
+    user.role === "ADMIN" ||
+    (Array.isArray(user.permissions) && user.permissions.includes("manage_outlets"));
+
+  if (!canManage) {
+    return NextResponse.json({ error: "Forbidden: manage_outlets permission required" }, { status: 403 });
   }
 
   const organizationId = await resolveOrganizationId(user);
@@ -161,9 +167,15 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const user = session.user as { organizationId: string; role: string; email?: string };
-  if (user.role !== "ORG_ADMIN" && user.role !== "SUPER_ADMIN" && user.role !== "ADMIN") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const user = session.user as any;
+  const canManage =
+    user.role === "ORG_ADMIN" ||
+    user.role === "SUPER_ADMIN" ||
+    user.role === "ADMIN" ||
+    (Array.isArray(user.permissions) && user.permissions.includes("manage_outlets"));
+
+  if (!canManage) {
+    return NextResponse.json({ error: "Forbidden: manage_outlets permission required" }, { status: 403 });
   }
 
   const organizationId = await resolveOrganizationId(user);
@@ -245,9 +257,15 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const user = session.user as { organizationId: string; role: string; email?: string };
-  if (user.role !== "ORG_ADMIN" && user.role !== "SUPER_ADMIN" && user.role !== "ADMIN") {
-    return NextResponse.json({ error: "Forbidden: Admin access required" }, { status: 403 });
+  const user = session.user as { organizationId: string; role: string; permissions?: string[]; email?: string };
+  const canManage =
+    user.role === "ORG_ADMIN" ||
+    user.role === "SUPER_ADMIN" ||
+    user.role === "ADMIN" ||
+    userHasPermission(user.permissions, "manage_outlets", user.role);
+
+  if (!canManage) {
+    return NextResponse.json({ error: "Forbidden: Manage facilities permission required" }, { status: 403 });
   }
 
   const organizationId = await resolveOrganizationId(user);

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import PaywallModal from "@/components/PaywallModal";
 
 export interface DynamicFormRendererProps {
   outlet: {
@@ -78,6 +79,7 @@ export default function DynamicFormRenderer({
 
   const [loading, setLoading] = useState<boolean>(false);
   const [saving, setSaving] = useState<boolean>(false);
+  const [showPaywall, setShowPaywall] = useState<boolean>(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   // Load existing submission for selected date & shift
@@ -609,6 +611,14 @@ function getInitialDataForSchema(
       });
 
       const json = await res.json();
+      if (res.status === 402 || json.paywall) {
+        setShowPaywall(true);
+        setMessage({
+          type: "error",
+          text: "Active Dodo Payments subscription required to submit reports. Upgrade to unlock.",
+        });
+        return;
+      }
       if (!res.ok) throw new Error(json.error || "Save failed");
 
       setMessage({ type: "success", text: "Report submitted & saved successfully!" });
@@ -1667,6 +1677,13 @@ function getInitialDataForSchema(
           </div>
         </div>
       )}
+
+      <PaywallModal
+        isOpen={showPaywall}
+        onClose={() => setShowPaywall(false)}
+        title="Active Subscription Required"
+        description="Your organization is currently on the Free Preview tier. To record official shift reports and submit inspection audits, activate your OVYRO FDA subscription via Dodo Payments."
+      />
     </div>
   );
 }

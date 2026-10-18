@@ -239,19 +239,8 @@ export async function resolveOrganizationId(sessionUser: {
     }
   }
 
-  // 3. Fallback to first active organization in DB
-  const firstOrg = await prisma.organization.findFirst({ select: { id: true } });
-  if (firstOrg) return firstOrg.id;
-
-  // 4. Create a default organization if table is completely empty
-  const fallbackOrg = await prisma.organization.create({
-    data: {
-      name: "My Enterprise Kitchen",
-      slug: `org-${Date.now().toString().slice(-6)}`,
-    },
-    select: { id: true },
-  });
-  return fallbackOrg.id;
+  // 3. Reject unauthenticated/unscoped tenant access
+  throw new Error("Tenant isolation violation: Unable to determine organizationId for current session");
 }
 
 export async function resolveUserId(sessionUser: {
@@ -277,4 +266,10 @@ export async function resolveUserId(sessionUser: {
   return null;
 }
 
-
+export function isPlatformOwner(user?: { role?: string | null; email?: string | null } | null): boolean {
+  if (!user) return false;
+  if (user.role === "SUPER_ADMIN" || user.role === "PLATFORM_OWNER") return true;
+  if (user.email === "admin@reporting.app") return true;
+  if (process.env.PLATFORM_OWNER_EMAIL && user.email === process.env.PLATFORM_OWNER_EMAIL) return true;
+  return false;
+}

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -37,7 +38,14 @@ export default function LoginPage() {
     });
 
     if (res?.error) {
-      setError("Invalid email or password. Please verify credentials or create a new account.");
+      if (
+        res.error.includes("DATABASE_UNREACHABLE") ||
+        res.error.includes("CallbackRouteError")
+      ) {
+        setError("Database server is unreachable. Please verify your database connection (e.g. check if Supabase is active or Railway PostgreSQL is connected).");
+      } else {
+        setError("Invalid email or password. Please verify credentials or create a new account.");
+      }
       setLoading(false);
     } else {
       router.push("/dashboard");
@@ -88,7 +96,7 @@ export default function LoginPage() {
         setSuccess("Account created successfully! Please sign in with your password.");
         setLoading(false);
       } else {
-        router.push("/dashboard");
+        router.push("/onboard");
         router.refresh();
       }
     } catch (err: any) {
@@ -97,11 +105,6 @@ export default function LoginPage() {
     }
   }
 
-  const handleQuickLogin = (demoEmail: string, demoPass: string) => {
-    setTab("login");
-    setLoginEmail(demoEmail);
-    setLoginPassword(demoPass);
-  };
 
   return (
     <div className="login-page">
@@ -145,66 +148,43 @@ export default function LoginPage() {
 
         {/* ─── TAB 1: SIGN IN ──────────────────────────────────────────────── */}
         {tab === "login" && (
-          <>
-            <form onSubmit={handleLoginSubmit} className="login-form">
-              <div className="form-group">
-                <label htmlFor="login-email">Work Email Address</label>
-                <input
-                  id="login-email"
-                  type="email"
-                  value={loginEmail}
-                  onChange={(e) => setLoginEmail(e.target.value)}
-                  placeholder="admin@reporting.app"
-                  required
-                  autoFocus
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="login-password">Password</label>
-                <input
-                  id="login-password"
-                  type="password"
-                  value={loginPassword}
-                  onChange={(e) => setLoginPassword(e.target.value)}
-                  placeholder="••••••••"
-                  required
-                />
-              </div>
-
-              <button
-                type="submit"
-                className="btn btn-primary login-btn"
-                disabled={loading}
-              >
-                {loading ? "Signing in..." : "🔐 Sign In to Workspace"}
-              </button>
-            </form>
-
-            {/* Quick Demo Credentials Bar */}
-            <div className="demo-credentials-box">
-              <span className="demo-title">Quick Demo Logins:</span>
-              <div className="demo-buttons-row">
-                <button
-                  type="button"
-                  onClick={() => handleQuickLogin("admin@reporting.app", "Admin@123")}
-                  className="demo-pill-btn"
-                >
-                  👑 Admin (admin@reporting.app)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleQuickLogin("supervisor@reporting.app", "Staff@123")}
-                  className="demo-pill-btn"
-                >
-                  🛡️ Supervisor (supervisor@reporting.app)
-                </button>
-              </div>
+          <form onSubmit={handleLoginSubmit} className="login-form">
+            <div className="form-group">
+              <label htmlFor="login-email">Work Email Address</label>
+              <input
+                id="login-email"
+                type="email"
+                value={loginEmail}
+                onChange={(e) => setLoginEmail(e.target.value)}
+                placeholder="you@company.com"
+                required
+                autoFocus
+              />
             </div>
-          </>
+
+            <div className="form-group">
+              <label htmlFor="login-password">Password</label>
+              <input
+                id="login-password"
+                type="password"
+                value={loginPassword}
+                onChange={(e) => setLoginPassword(e.target.value)}
+                placeholder="••••••••"
+                required
+              />
+            </div>
+
+            <button
+              type="submit"
+              className="btn btn-primary login-btn"
+              disabled={loading}
+            >
+              {loading ? "Signing in..." : "🔐 Sign In to Workspace"}
+            </button>
+          </form>
         )}
 
-        {/* ─── TAB 2: CREATE NEW ACCOUNT & WORKSPACE ───────────────────────── */}
+        {/* ─── TAB 2: CREATE NEW ACCOUNT (Streamlined: Name, Email, Password) ─ */}
         {tab === "register" && (
           <form onSubmit={handleRegisterSubmit} className="login-form">
             <div className="form-group">
@@ -214,7 +194,7 @@ export default function LoginPage() {
                 type="text"
                 value={regName}
                 onChange={(e) => setRegName(e.target.value)}
-                placeholder="e.g. Chef Marco"
+                placeholder="e.g. Marco Rossi"
                 required
                 autoFocus
               />
@@ -227,52 +207,34 @@ export default function LoginPage() {
                 type="email"
                 value={regEmail}
                 onChange={(e) => setRegEmail(e.target.value)}
-                placeholder="marco@mykitchen.com"
+                placeholder="marco@kitchen.com"
                 required
               />
             </div>
 
             <div className="form-group">
-              <label htmlFor="reg-password">Password *</label>
+              <label htmlFor="reg-password">Choose Password *</label>
               <input
                 id="reg-password"
                 type="password"
                 value={regPassword}
                 onChange={(e) => setRegPassword(e.target.value)}
-                placeholder="••••••••"
+                placeholder="At least 6 characters"
                 required
                 minLength={6}
               />
             </div>
 
-            <div className="form-group">
-              <label htmlFor="reg-org">Organization / Brand Name (Optional)</label>
-              <input
-                id="reg-org"
-                type="text"
-                value={regOrgName}
-                onChange={(e) => setRegOrgName(e.target.value)}
-                placeholder="e.g. Skyline Grand Cafe"
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="reg-outlet">Initial Facility Name (Optional)</label>
-              <input
-                id="reg-outlet"
-                type="text"
-                value={regOutletName}
-                onChange={(e) => setRegOutletName(e.target.value)}
-                placeholder="e.g. Downtown Central Kitchen"
-              />
-            </div>
+            <p style={{ fontSize: "0.75rem", color: "#64748b", margin: "0.25rem 0 0.75rem 0", lineHeight: 1.4 }}>
+              Next, you&apos;ll configure your facility type &amp; operational risks so we can place your custom compliance templates.
+            </p>
 
             <button
               type="submit"
               className="btn btn-primary login-btn"
               disabled={loading}
             >
-              {loading ? "Setting up workspace..." : "🚀 Create Workspace & Log In"}
+              {loading ? "Creating Account..." : "✨ Continue to Setup →"}
             </button>
           </form>
         )}

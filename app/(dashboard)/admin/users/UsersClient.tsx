@@ -3,6 +3,62 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { SYSTEM_PERMISSIONS } from "@/lib/permissions";
+import PaywallModal from "@/components/PaywallModal";
+
+function IconShield({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+    </svg>
+  );
+}
+
+function IconUsers({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
+  );
+}
+
+function IconPlus({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="12" x2="12" y1="5" y2="19" />
+      <line x1="5" x2="19" y1="12" y2="12" />
+    </svg>
+  );
+}
+
+function IconEdit({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+    </svg>
+  );
+}
+
+function IconTrash({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 6h18" />
+      <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+      <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+    </svg>
+  );
+}
+
+function IconCheck({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+  );
+}
 
 interface UserType {
   id: string;
@@ -65,6 +121,7 @@ export default function UsersClient({
   const [rolePerms, setRolePerms] = useState<string[]>(["submit_checklists"]);
 
   const [saving, setSaving] = useState(false);
+  const [showPaywall, setShowPaywall] = useState(false);
   const [alert, setAlert] = useState<{ type: "success" | "error"; msg: string } | null>(null);
 
   const handleOpenCreateRole = () => {
@@ -91,6 +148,10 @@ export default function UsersClient({
     try {
       const res = await fetch(`/api/admin/roles?id=${roleId}`, { method: "DELETE" });
       const json = await res.json();
+      if (res.status === 402 || json.paywall) {
+        setShowPaywall(true);
+        return;
+      }
       if (!res.ok) throw new Error(json.error || "Failed to delete role");
 
       setCustomRoles((prev) => prev.filter((r) => r.id !== roleId));
@@ -166,6 +227,11 @@ export default function UsersClient({
       });
 
       const data = await res.json();
+      if (res.status === 402 || data.paywall) {
+        setShowPaywall(true);
+        setAlert({ type: "error", msg: "Active Dodo Payments subscription required to manage team members or roles." });
+        return;
+      }
       if (!res.ok) throw new Error(data.error || "Failed to save user");
 
       setAlert({
@@ -211,6 +277,11 @@ export default function UsersClient({
       });
 
       const json = await res.json();
+      if (res.status === 402 || json.paywall) {
+        setShowPaywall(true);
+        setAlert({ type: "error", msg: "Active Dodo Payments subscription required to customize roles." });
+        return;
+      }
       if (!res.ok) throw new Error(json.error || "Failed to save role");
 
       if (editingRole) {
@@ -239,6 +310,11 @@ export default function UsersClient({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, isActive: !current }),
     });
+    const json = await res.json().catch(() => ({}));
+    if (res.status === 402 || json.paywall) {
+      setShowPaywall(true);
+      return;
+    }
     if (res.ok) {
       setUsers((u) => u.map((x) => (x.id === id ? { ...x, isActive: !current } : x)));
     }
@@ -260,13 +336,15 @@ export default function UsersClient({
             onClick={handleOpenCreateRole}
             className="btn-secondary-action"
           >
-            🛡️ Create Dynamic Role
+            <IconShield />
+            <span>Create Dynamic Role</span>
           </button>
           <button
             onClick={handleOpenCreateUser}
             className="btn-create-primary"
           >
-            <span>➕</span> Add Team Member
+            <IconPlus />
+            <span>Add Team Member</span>
           </button>
         </div>
       </div>
@@ -287,13 +365,15 @@ export default function UsersClient({
           onClick={() => setActiveTab("users")}
           className={`tab-btn ${activeTab === "users" ? "active" : ""}`}
         >
-          👥 Team Members ({users.length})
+          <IconUsers />
+          <span>Team Members ({users.length})</span>
         </button>
         <button
           onClick={() => setActiveTab("roles")}
           className={`tab-btn ${activeTab === "roles" ? "active" : ""}`}
         >
-          🛡️ Dynamic Custom Roles ({customRoles.length})
+          <IconShield />
+          <span>Dynamic Custom Roles ({customRoles.length})</span>
         </button>
       </div>
 
@@ -375,7 +455,8 @@ export default function UsersClient({
                             onClick={() => handleOpenEditUser(u)}
                             className="btn-edit-small"
                           >
-                            ✏️ Permissions
+                            <IconEdit />
+                            <span>Permissions</span>
                           </button>
                           <button
                             onClick={() => toggleActive(u.id, u.isActive)}
@@ -398,7 +479,9 @@ export default function UsersClient({
           {customRoles.map((role) => (
             <div key={role.id} className="template-card">
               <div className="template-card-header">
-                <div className="template-icon-circle">🛡️</div>
+                <div className="template-icon-circle">
+                  <IconShield />
+                </div>
                 <span className="badge-category">{role.permissions.length} Permissions</span>
               </div>
               <h3 className="template-title">{role.name}</h3>
@@ -411,7 +494,8 @@ export default function UsersClient({
                     const def = SYSTEM_PERMISSIONS.find((sp) => sp.key === p);
                     return (
                       <span key={p} className="template-chip">
-                        ✓ {def?.label || p}
+                        <IconCheck />
+                        <span>{def?.label || p}</span>
                       </span>
                     );
                   })}
@@ -424,14 +508,16 @@ export default function UsersClient({
                   onClick={() => handleOpenEditRole(role)}
                   className="btn-action-edit"
                 >
-                  ✏️ Edit Role & Permissions
+                  <IconEdit />
+                  <span>Edit Role & Permissions</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => handleDeleteRole(role.id, role.name)}
                   className="btn-action-delete"
                 >
-                  🗑️ Delete
+                  <IconTrash />
+                  <span>Delete</span>
                 </button>
               </div>
             </div>
@@ -532,26 +618,44 @@ export default function UsersClient({
               {/* Granular Permission Toggles */}
               <div className="form-group">
                 <label>Granular Dynamic Permissions</label>
-                <div className="permissions-selection-grid">
-                  {SYSTEM_PERMISSIONS.map((perm) => (
-                    <label key={perm.key} className="perm-checkbox-card">
-                      <input
-                        type="checkbox"
-                        checked={selectedPermissions.includes(perm.key)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedPermissions([...selectedPermissions, perm.key]);
-                          } else {
-                            setSelectedPermissions(selectedPermissions.filter((k) => k !== perm.key));
-                          }
-                        }}
-                      />
-                      <div>
-                        <span className="perm-label">{perm.label}</span>
-                        <span className="perm-desc">{perm.description}</span>
+                <div className="permissions-selection-groups">
+                  {[
+                    { cat: "EXECUTION", title: "⚡ Execution & Floor Checklists", desc: "Shift checklist logging & entries" },
+                    { cat: "AUDIT", title: "📋 Audit, Sign-Off & Regulatory Exports", desc: "Digital verification & reporting" },
+                    { cat: "MANAGEMENT", title: "⚙️ Facility, Team & Template Management", desc: "System setup, RBAC & custom tabs" },
+                  ].map((grp) => {
+                    const groupPerms = SYSTEM_PERMISSIONS.filter((p) => p.category === grp.cat);
+                    if (groupPerms.length === 0) return null;
+                    return (
+                      <div key={grp.cat} className="perm-domain-group" style={{ marginBottom: "0.85rem" }}>
+                        <div style={{ marginBottom: "0.35rem" }}>
+                          <span style={{ fontSize: "0.78rem", fontWeight: 700, color: "var(--text-primary)" }}>{grp.title}</span>
+                          <span style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginLeft: "0.4rem" }}>({grp.desc})</span>
+                        </div>
+                        <div className="permissions-selection-grid">
+                          {groupPerms.map((perm) => (
+                            <label key={perm.key} className="perm-checkbox-card">
+                              <input
+                                type="checkbox"
+                                checked={selectedPermissions.includes(perm.key)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedPermissions([...selectedPermissions, perm.key]);
+                                  } else {
+                                    setSelectedPermissions(selectedPermissions.filter((k) => k !== perm.key));
+                                  }
+                                }}
+                              />
+                              <div>
+                                <span className="perm-label">{perm.label}</span>
+                                <span className="perm-desc">{perm.description}</span>
+                              </div>
+                            </label>
+                          ))}
+                        </div>
                       </div>
-                    </label>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 
@@ -738,26 +842,44 @@ export default function UsersClient({
                     </button>
                   </div>
                 </div>
-                <div className="permissions-selection-grid">
-                  {SYSTEM_PERMISSIONS.map((perm) => (
-                    <label key={perm.key} className="perm-checkbox-card">
-                      <input
-                        type="checkbox"
-                        checked={rolePerms.includes(perm.key)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setRolePerms([...rolePerms, perm.key]);
-                          } else {
-                            setRolePerms(rolePerms.filter((k) => k !== perm.key));
-                          }
-                        }}
-                      />
-                      <div>
-                        <span className="perm-label">{perm.label}</span>
-                        <span className="perm-desc">{perm.description}</span>
+                <div className="permissions-selection-groups">
+                  {[
+                    { cat: "EXECUTION", title: "⚡ Execution & Floor Checklists", desc: "Shift checklist logging & entries" },
+                    { cat: "AUDIT", title: "📋 Audit, Sign-Off & Regulatory Exports", desc: "Digital verification & reporting" },
+                    { cat: "MANAGEMENT", title: "⚙️ Facility, Team & Template Management", desc: "System setup, RBAC & custom tabs" },
+                  ].map((grp) => {
+                    const groupPerms = SYSTEM_PERMISSIONS.filter((p) => p.category === grp.cat);
+                    if (groupPerms.length === 0) return null;
+                    return (
+                      <div key={grp.cat} className="perm-domain-group" style={{ marginBottom: "1rem" }}>
+                        <div style={{ marginBottom: "0.4rem" }}>
+                          <span style={{ fontSize: "0.8rem", fontWeight: 700, color: "var(--text-primary)" }}>{grp.title}</span>
+                          <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginLeft: "0.5rem" }}>({grp.desc})</span>
+                        </div>
+                        <div className="permissions-selection-grid">
+                          {groupPerms.map((perm) => (
+                            <label key={perm.key} className="perm-checkbox-card">
+                              <input
+                                type="checkbox"
+                                checked={rolePerms.includes(perm.key)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setRolePerms([...rolePerms, perm.key]);
+                                  } else {
+                                    setRolePerms(rolePerms.filter((k) => k !== perm.key));
+                                  }
+                                }}
+                              />
+                              <div>
+                                <span className="perm-label">{perm.label}</span>
+                                <span className="perm-desc">{perm.description}</span>
+                              </div>
+                            </label>
+                          ))}
+                        </div>
                       </div>
-                    </label>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 
@@ -773,6 +895,13 @@ export default function UsersClient({
           </div>
         </div>
       )}
+
+      <PaywallModal
+        isOpen={showPaywall}
+        onClose={() => setShowPaywall(false)}
+        title="Team Management Paywalled"
+        description="Adding kitchen team members, assigning custom roles, and managing checklist permissions requires an active OVYRO FDA subscription via Dodo Payments."
+      />
     </div>
   );
 }

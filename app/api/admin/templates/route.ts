@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { NextRequest, NextResponse } from "next/server";
 import { userHasPermission, resolveOrganizationId } from "@/lib/permissions";
+import { verifyPaywallOrReject } from "@/lib/paywall";
 
 function safeJson(val: any, fallback: any = {}) {
   if (typeof val !== "string") return val ?? fallback;
@@ -78,6 +79,10 @@ export async function POST(req: NextRequest) {
   }
 
   const organizationId = await resolveOrganizationId(user);
+
+  // Paywall check: modifying or creating templates requires active Dodo subscription
+  const paywallBlock = await verifyPaywallOrReject(organizationId, user);
+  if (paywallBlock) return paywallBlock;
 
   try {
     const body = await req.json();

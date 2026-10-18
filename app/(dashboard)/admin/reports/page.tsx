@@ -8,8 +8,15 @@ export default async function AdminReportsPage() {
   const session = await auth();
   if (!session?.user) redirect("/login");
 
-  const user = session.user as { organizationId: string; role: string; email?: string };
-  if (user.role !== "ORG_ADMIN" && user.role !== "SUPER_ADMIN" && user.role !== "ADMIN") {
+  const user = session.user as any;
+  const canAccess =
+    user.role === "ORG_ADMIN" ||
+    user.role === "SUPER_ADMIN" ||
+    user.role === "ADMIN" ||
+    (Array.isArray(user.permissions) &&
+      (user.permissions.includes("view_reports") || user.permissions.includes("export_audit_pack")));
+
+  if (!canAccess) {
     redirect("/dashboard");
   }
 

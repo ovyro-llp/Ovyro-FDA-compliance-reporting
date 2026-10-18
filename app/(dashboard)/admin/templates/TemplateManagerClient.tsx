@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import PaywallModal from "@/components/PaywallModal";
 
 export type ItemInputType = "STATUS" | "TEMPERATURE" | "NUMERIC" | "TEXT" | "TIME" | "CLEAN_DIRTY";
 
@@ -40,6 +41,25 @@ function safeJson(val: any, fallback: any = {}) {
   } catch {
     return fallback;
   }
+}
+
+function IconTrash({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 6h18" />
+      <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+      <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+    </svg>
+  );
+}
+
+function IconPlus({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="12" x2="12" y1="5" y2="19" />
+      <line x1="5" x2="19" y1="12" y2="12" />
+    </svg>
+  );
 }
 
 const DEFAULT_STAFF = [
@@ -236,6 +256,121 @@ const PRESETS: Record<string, { title: string; category: string; icon: string; f
       },
     ],
   },
+  RAW_MATERIAL_MANUFACTURING: {
+    title: "Raw Material Intake & Batch QA Inspection",
+    category: "RAW_MATERIAL_MANUFACTURING",
+    icon: "🏭",
+    frequency: "DAILY",
+    description: "Raw material receipt, supplier batch QA, COA verification, moisture % & core temperature.",
+    sections: [
+      {
+        id: "sec-rm-1",
+        title: "Raw Material Inbound Receiving",
+        items: [
+          { id: "rm-1", name: "Supplier Invoice & Batch / Lot Number Verified", itemType: "STATUS", defaultAssignee: "QA Inspector" },
+          { id: "rm-2", name: "Certificate of Analysis (COA) Enclosed & Verified", itemType: "STATUS", defaultAssignee: "QA Inspector" },
+          { id: "rm-3", name: "Transport Vehicle Hygiene & Packaging Seal Intact", itemType: "STATUS", defaultAssignee: "QA Inspector" },
+          { id: "rm-4", name: "Inbound Core / Surface Temperature (°C)", itemType: "TEMPERATURE", referenceTemp: "-18 to +4°C", targetMinTemp: -18, targetMaxTemp: 4, defaultAssignee: "QA Inspector" },
+        ],
+      },
+      {
+        id: "sec-rm-2",
+        title: "Sensory, Moisture & Chemical Quality Checks",
+        items: [
+          { id: "rm-5", name: "Sensory Evaluation (Aroma, Color, Absence of foreign particles)", itemType: "STATUS", defaultAssignee: "QA Inspector" },
+          { id: "rm-6", name: "Moisture Content % Logged (Safe Tolerance < 12%)", itemType: "NUMERIC", targetValue: 10, unitLabel: "%", minAllowed: 5, maxAllowed: 12, defaultAssignee: "QA Inspector" },
+          { id: "rm-7", name: "Raw Batch Allergen Labeling & Segregation Applied", itemType: "STATUS", defaultAssignee: "Floor Lead" },
+          { id: "rm-8", name: "Quarantine Tagging / Approved for Production Stamp", itemType: "STATUS", defaultAssignee: "Shift Supervisor" },
+        ],
+      },
+    ],
+  },
+  CLOUD_KITCHEN_DISPATCH: {
+    title: "Cloud Kitchen Dispatch & Tamper-Proof Audit",
+    category: "CLOUD_KITCHEN_DISPATCH",
+    icon: "🛵",
+    frequency: "SHIFT_WISE",
+    description: "Delivery order assembly, hot holding >65°C, tamper-evident security seal, and rider bag sanitization.",
+    sections: [
+      {
+        id: "sec-ck-1",
+        title: "Food Assembly & Thermal Safety",
+        items: [
+          { id: "ck-1", name: "Hot Food Dispatch Holding Temp (Min 65°C)", itemType: "TEMPERATURE", referenceTemp: "Min 65°C", targetMinTemp: 65, targetMaxTemp: 90, defaultAssignee: "Dispatch Lead" },
+          { id: "ck-2", name: "Cold Beverages & Desserts Chilled (< 5°C)", itemType: "TEMPERATURE", referenceTemp: "+2 to +5°C", targetMinTemp: 2, targetMaxTemp: 5, defaultAssignee: "Dispatch Lead" },
+          { id: "ck-3", name: "Allergen Warning & Expiry / Consume-By Label Attached", itemType: "STATUS", defaultAssignee: "Packer" },
+        ],
+      },
+      {
+        id: "sec-ck-2",
+        title: "Tamper-Proof Packaging & Delivery Partner Audit",
+        items: [
+          { id: "ck-4", name: "Tamper-Evident Security Seal Applied Across Container", itemType: "STATUS", defaultAssignee: "Packer" },
+          { id: "ck-5", name: "Spill-Proof Lid & Steam Vent Sealed", itemType: "STATUS", defaultAssignee: "Packer" },
+          { id: "ck-6", name: "Delivery Partner Insulated Bag Sanitized & Clean", itemType: "STATUS", defaultAssignee: "Dispatch Lead" },
+          { id: "ck-7", name: "Handover Timestamp & Order ID Verified on POS", itemType: "STATUS", defaultAssignee: "Dispatch Lead" },
+        ],
+      },
+    ],
+  },
+  CAFE_BAKERY: {
+    title: "Specialty Cafe & Espresso Equipment Log",
+    category: "CAFE_BAKERY",
+    icon: "☕",
+    frequency: "SHIFT_WISE",
+    description: "Espresso machine dial-in, milk steam wand sanitization, water filtration TDS, and bakery chiller.",
+    sections: [
+      {
+        id: "sec-cafe-1",
+        title: "Espresso Machine & Dial-in Calibration",
+        items: [
+          { id: "cafe-1", name: "Group Head Shower Screen Flush & Clean", itemType: "CLEAN_DIRTY", defaultAssignee: "Head Barista" },
+          { id: "cafe-2", name: "9-Bar Pump Pressure & Boiler Temp Calibrated", itemType: "STATUS", defaultAssignee: "Head Barista" },
+          { id: "cafe-3", name: "Espresso Dose, Yield & Extraction Time (25-30s)", itemType: "STATUS", defaultAssignee: "Head Barista" },
+          { id: "cafe-4", name: "Water Filtration Hardness / TDS Log (< 150 PPM)", itemType: "NUMERIC", targetValue: 120, unitLabel: "PPM", minAllowed: 50, maxAllowed: 150, defaultAssignee: "Head Barista" },
+        ],
+      },
+      {
+        id: "sec-cafe-2",
+        title: "Milk Hygiene & Bakery Display Counter",
+        items: [
+          { id: "cafe-5", name: "Steam Wand Purged & Milk Residue Chemical Soak", itemType: "CLEAN_DIRTY", defaultAssignee: "Barista" },
+          { id: "cafe-6", name: "Milk Pitchers Sanitizer Rinse Bath", itemType: "STATUS", defaultAssignee: "Barista" },
+          { id: "cafe-7", name: "Bakery / Croissant Display Counter Temp (+2 to +6°C)", itemType: "TEMPERATURE", referenceTemp: "+2 to +6°C", targetMinTemp: 2, targetMaxTemp: 6, defaultAssignee: "Staff Member" },
+          { id: "cafe-8", name: "Pastry Tongs & Service Trays Sanitized", itemType: "STATUS", defaultAssignee: "Staff Member" },
+        ],
+      },
+    ],
+  },
+  FSSAI_COMPLIANCE: {
+    title: "FSSAI Schedule 4 & Cooking Oil TPC Audit",
+    category: "FSSAI_COMPLIANCE",
+    icon: "🇮🇳",
+    frequency: "DAILY",
+    description: "FSSAI regulatory audit: cooking oil Total Polar Compounds (TPC % < 25), medical fitness & FIFO.",
+    sections: [
+      {
+        id: "sec-fssai-1",
+        title: "Cooking Oil TPC & Safe Frying Compliance",
+        items: [
+          { id: "fssai-1", name: "Cooking Oil Total Polar Compounds (TPC %) Test", itemType: "NUMERIC", targetValue: 15, unitLabel: "TPC %", minAllowed: 0, maxAllowed: 25, defaultAssignee: "Kitchen Lead" },
+          { id: "fssai-2", name: "Oil Discard Logged If TPC > 25% or Smoky", itemType: "STATUS", defaultAssignee: "Kitchen Lead" },
+          { id: "fssai-3", name: "Deep Fryer Strainer & Sediment Trap Cleaned", itemType: "CLEAN_DIRTY", defaultAssignee: "Staff Member" },
+        ],
+      },
+      {
+        id: "sec-fssai-2",
+        title: "FSSAI Schedule 4 Food Safety Hygiene",
+        items: [
+          { id: "fssai-4", name: "Food Handlers Clean Uniform, Apron & Hairnet Check", itemType: "STATUS", defaultAssignee: "Shift Supervisor" },
+          { id: "fssai-5", name: "Absence of Open Cuts, Burns or Illness (Medical Fitness)", itemType: "STATUS", defaultAssignee: "Shift Supervisor" },
+          { id: "fssai-6", name: "First-In-First-Out (FIFO) Date Tagging on All Prep", itemType: "STATUS", defaultAssignee: "Kitchen Lead" },
+          { id: "fssai-7", name: "Pest Bait Stations & Insect Light Trap (ILT) Inspected", itemType: "STATUS", defaultAssignee: "Shift Supervisor" },
+          { id: "fssai-8", name: "Potable Water Filter Cartridge & RO / UV Operational", itemType: "STATUS", defaultAssignee: "Shift Supervisor" },
+        ],
+      },
+    ],
+  },
 };
 
 export default function TemplateManagerClient({
@@ -249,6 +384,7 @@ export default function TemplateManagerClient({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successToast, setSuccessToast] = useState<string | null>(null);
+  const [showPaywall, setShowPaywall] = useState(false);
 
   // Editor form state
   const [title, setTitle] = useState("");
@@ -593,6 +729,11 @@ export default function TemplateManagerClient({
       });
 
       const json = await res.json();
+      if (res.status === 402 || json.paywall) {
+        setShowPaywall(true);
+        setError("Subscription required to create or modify templates. Upgrade via Dodo Payments.");
+        return;
+      }
       if (!res.ok) throw new Error(json.error || "Failed to save template");
 
       showToast(editingTemplate ? `✓ "${title}" updated successfully!` : `✓ "${title}" created successfully!`);
@@ -628,6 +769,10 @@ export default function TemplateManagerClient({
       });
 
       const json = await res.json();
+      if (res.status === 402 || json.paywall) {
+        setShowPaywall(true);
+        return;
+      }
       if (!res.ok) throw new Error(json.error || "Failed to update archive status");
 
       setTemplates((prev) =>
@@ -645,6 +790,10 @@ export default function TemplateManagerClient({
     try {
       const res = await fetch(`/api/admin/templates/${id}`, { method: "DELETE" });
       const json = await res.json();
+      if (res.status === 402 || json.paywall) {
+        setShowPaywall(true);
+        return;
+      }
       if (!res.ok) throw new Error(json.error || "Failed to delete report tab");
 
       setTemplates((prev) => prev.filter((t) => t.id !== id));
@@ -899,6 +1048,10 @@ export default function TemplateManagerClient({
                       <option value="SAFETY_GLASS">🪟 Safety, Glass & Pest</option>
                       <option value="CHEMICAL">🧪 Chemical Sanitizer & PPM</option>
                       <option value="COOKING_HACCP">🍳 Cooking Core & Hot Holding</option>
+                      <option value="RAW_MATERIAL_MANUFACTURING">🏭 Raw Material & Batch QA</option>
+                      <option value="CLOUD_KITCHEN_DISPATCH">🛵 Cloud Kitchen Dispatch</option>
+                      <option value="CAFE_BAKERY">☕ Cafe, Bakery & Roastery</option>
+                      <option value="FSSAI_COMPLIANCE">🇮🇳 FSSAI Schedule 4 & Oil TPC</option>
                       <option value="MAINTENANCE">🗓️ Periodic Maintenance</option>
                       <option value="CUSTOM">✨ Custom Category Name...</option>
                     </select>
@@ -1067,7 +1220,8 @@ export default function TemplateManagerClient({
                               onClick={() => handleAddItem(secIdx)}
                               className="btn-add-item-small"
                             >
-                              ➕ Add Item
+                              <IconPlus />
+                              <span>Add Item</span>
                             </button>
                             {sections.length > 1 && (
                               <button
@@ -1075,8 +1229,9 @@ export default function TemplateManagerClient({
                                 onClick={() => handleDeleteSection(secIdx)}
                                 className="btn-delete-section"
                                 title="Delete Section"
+                                aria-label="Delete Section"
                               >
-                                🗑️
+                                <IconTrash />
                               </button>
                             )}
                           </div>
@@ -1461,6 +1616,13 @@ export default function TemplateManagerClient({
           </div>
         </div>
       )}
+
+      <PaywallModal
+        isOpen={showPaywall}
+        onClose={() => setShowPaywall(false)}
+        title="Template Management Paywalled"
+        description="Customizing checklists, adding new reporting sections, or archiving templates requires an active OVYRO FDA subscription via Dodo Payments."
+      />
     </div>
   );
 }

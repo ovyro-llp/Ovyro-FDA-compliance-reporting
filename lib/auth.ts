@@ -29,23 +29,29 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const email = String(credentials.email).toLowerCase().trim();
         const password = String(credentials.password).trim();
 
-        const user = await prisma.user.findUnique({
-          where: { email },
-          include: {
-            organization: {
-              select: { id: true, name: true, slug: true, plan: true },
+        let user;
+        try {
+          user = await prisma.user.findUnique({
+            where: { email },
+            include: {
+              organization: {
+                select: { id: true, name: true, slug: true, plan: true },
+              },
+              customRole: {
+                select: { id: true, name: true, permissions: true },
+              },
+              userOutlets: {
+                select: { outletId: true, role: true },
+              },
+              templateAccess: {
+                select: { templateId: true, canSubmit: true, canVerify: true },
+              },
             },
-            customRole: {
-              select: { id: true, name: true, permissions: true },
-            },
-            userOutlets: {
-              select: { outletId: true, role: true },
-            },
-            templateAccess: {
-              select: { templateId: true, canSubmit: true, canVerify: true },
-            },
-          },
-        });
+          });
+        } catch (dbError: any) {
+          console.error("[AUTH_DATABASE_ERROR]:", dbError.message || dbError);
+          throw new Error("DATABASE_UNREACHABLE");
+        }
 
         if (!user || !user.isActive) return null;
 

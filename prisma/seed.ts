@@ -87,7 +87,14 @@ const GENERIC_SAFETY_SCHEMA = {
 };
 
 async function main() {
-  console.log("🧹 Clearing slate and creating clean multi-tenant SaaS workspace...");
+  const existingOrgCount = await prisma.organization.count();
+  if (existingOrgCount > 0 && process.env.FORCE_SEED !== "true") {
+    console.log("ℹ️ Database is already initialized. Skipping seed to protect production data.");
+    console.log("💡 (Tip: Set FORCE_SEED=true if you explicitly wish to reset and re-seed the database).");
+    return;
+  }
+
+  console.log("🧹 Initializing clean multi-tenant SaaS workspace...");
 
   // 1. Wipe old submission and template mappings
   await prisma.formSubmission.deleteMany({});

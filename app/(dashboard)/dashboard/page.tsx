@@ -4,6 +4,18 @@ import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import Link from "next/link";
 import { getTodayString, formatDate, resolveOrganizationId } from "@/lib/permissions";
+import {
+  CheckCircle2,
+  TrendingUp,
+  ShieldCheck,
+  Building2,
+  Sparkles,
+  Clock,
+  ArrowRight,
+  FileSpreadsheet,
+  Calendar,
+  Eye,
+} from "lucide-react";
 
 interface PageProps {
   searchParams: Promise<{ outlet?: string }>;
@@ -26,6 +38,12 @@ export default async function DashboardPage({ searchParams }: PageProps) {
 
   const resolvedParams = (await searchParams) || {};
   const cookieStore = await cookies();
+
+  // Load organization billing status
+  const org = await prisma.organization.findUnique({
+    where: { id: organizationId },
+    select: { billingStatus: true, plan: true },
+  });
 
   // Load all tenant outlets
   const outlets = await prisma.outlet.findMany({
@@ -66,7 +84,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   });
 
   // Fetch today's submissions for this outlet
-  const todaySubmissions = await prisma.formSubmission.findMany({
+  const todaySubsubmissions = await prisma.formSubmission.findMany({
     where: {
       outletId: currentOutlet.id,
       date: today,
@@ -79,7 +97,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   });
 
   const submissionMap = new Map<string, any[]>();
-  todaySubmissions.forEach((sub) => {
+  todaySubsubmissions.forEach((sub) => {
     const arr = submissionMap.get(sub.templateId) || [];
     arr.push(sub);
     submissionMap.set(sub.templateId, arr);
@@ -107,7 +125,9 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       {/* Welcome Banner */}
       <div className="dashboard-hero-banner">
         <div className="hero-left">
-          <span className="hero-date-badge">📅 {formatDate(today)}</span>
+          <span className="hero-date-badge flex items-center gap-1.5">
+            <Calendar size={14} className="text-blue-600" /> {formatDate(today)}
+          </span>
           <h1 className="hero-title">
             Welcome back, {user.name || "Operator"}!
           </h1>
@@ -118,7 +138,9 @@ export default async function DashboardPage({ searchParams }: PageProps) {
 
         <div className="hero-right">
           <div className="outlet-pill-badge">
-            <span className="pill-icon">{currentOutlet.icon}</span>
+            <span className="pill-icon flex items-center justify-center text-blue-600">
+              <Building2 size={16} />
+            </span>
             <div className="pill-details">
               <span className="pill-title">{currentOutlet.name}</span>
               <span className="pill-type">{currentOutlet.type}</span>
@@ -127,10 +149,71 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         </div>
       </div>
 
-      {/* KPI Stats Row */}
+      {/* Free Inspection Mode / Upgrade Banner */}
+      {org?.billingStatus !== "PAID" && (
+        <div style={{
+          background: "#ffffff",
+          border: "1px solid #bfdbfe",
+          borderRadius: "16px",
+          padding: "1.1rem 1.35rem",
+          marginBottom: "1.5rem",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: "1rem",
+          boxShadow: "0 4px 12px rgba(37, 99, 235, 0.06)",
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.85rem" }}>
+            <div style={{
+              width: "40px",
+              height: "40px",
+              borderRadius: "10px",
+              background: "#eff6ff",
+              color: "#2563eb",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}>
+              <Eye size={20} />
+            </div>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: "0.95rem", color: "#1e3a8a" }}>
+                Free Inspection Mode Active
+              </div>
+              <div style={{ fontSize: "0.825rem", color: "#475569", marginTop: "0.15rem" }}>
+                All bespoke compliance SOPs are placed and ready for inspection. Subscribe to unlock shift logging, reports, and team management.
+              </div>
+            </div>
+          </div>
+          <Link
+            href="/admin/billing"
+            style={{
+              background: "#2563eb",
+              color: "#ffffff",
+              padding: "0.6rem 1.25rem",
+              borderRadius: "10px",
+              fontWeight: 600,
+              fontSize: "0.875rem",
+              textDecoration: "none",
+              boxShadow: "0 2px 8px rgba(37, 99, 235, 0.25)",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.4rem",
+              whiteSpace: "nowrap",
+            }}
+          >
+            Activate Subscription (₹500/mo) <ArrowRight size={15} />
+          </Link>
+        </div>
+      )}
+
+      {/* KPI Stats Row (Bento Grid) */}
       <div className="dashboard-kpi-grid">
         <div className="kpi-box">
-          <div className="kpi-icon-wrap green">✓</div>
+          <div className="kpi-icon-wrap green">
+            <CheckCircle2 size={20} />
+          </div>
           <div>
             <span className="kpi-num">{completedCount}/{totalTemplates}</span>
             <span className="kpi-label">Today's Checklists Done</span>
@@ -138,7 +221,9 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         </div>
 
         <div className="kpi-box">
-          <div className="kpi-icon-wrap blue">📈</div>
+          <div className="kpi-icon-wrap blue">
+            <TrendingUp size={20} />
+          </div>
           <div>
             <span className="kpi-num">{completionPercentage}%</span>
             <span className="kpi-label">Facility Completion Rate</span>
@@ -146,17 +231,21 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         </div>
 
         <div className="kpi-box">
-          <div className="kpi-icon-wrap amber">🛡️</div>
+          <div className="kpi-icon-wrap amber">
+            <ShieldCheck size={20} />
+          </div>
           <div>
             <span className="kpi-num">
-              {todaySubmissions.filter((s) => s.status === "VERIFIED" || s.supervisorSigned).length}
+              {todaySubsubmissions.filter((s) => s.status === "VERIFIED" || s.supervisorSigned).length}
             </span>
             <span className="kpi-label">Supervisor Verified</span>
           </div>
         </div>
 
         <div className="kpi-box">
-          <div className="kpi-icon-wrap purple">🏢</div>
+          <div className="kpi-icon-wrap purple">
+            <Building2 size={20} />
+          </div>
           <div>
             <span className="kpi-num">{outlets.length}</span>
             <span className="kpi-label">Active Facilities</span>
@@ -195,9 +284,15 @@ export default async function DashboardPage({ searchParams }: PageProps) {
                     className={`checklist-card ${isDone ? "is-done" : "is-pending"}`}
                   >
                     <div className="checklist-card-top">
-                      <span className="card-icon">{tpl.icon || "📋"}</span>
+                      <div className="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-semibold">
+                        <FileSpreadsheet size={18} />
+                      </div>
                       <span className={`status-tag ${isDone ? "done" : "pending"}`}>
-                        {isDone ? "✓ Logged" : "⏳ Pending"}
+                        {isDone ? (
+                          <span className="flex items-center gap-1"><CheckCircle2 size={13} /> Completed</span>
+                        ) : (
+                          <span className="flex items-center gap-1"><Clock size={13} /> Pending</span>
+                        )}
                       </span>
                     </div>
 
@@ -212,7 +307,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
                           By {latestSub.submittedBy?.name || "Staff"} • {latestSub.complianceScore ?? 100}% Score
                         </span>
                       ) : (
-                        <span>Due today • Click to record</span>
+                        <span>Due today • Tap to record</span>
                       )}
                     </div>
                   </Link>
@@ -234,7 +329,9 @@ export default async function DashboardPage({ searchParams }: PageProps) {
             ) : (
               recentFeed.map((entry) => (
                 <div key={entry.id} className="stream-item">
-                  <div className="stream-icon">{entry.template?.icon || "📋"}</div>
+                  <div className="stream-icon flex items-center justify-center text-slate-600">
+                    <FileSpreadsheet size={16} />
+                  </div>
                   <div className="stream-info">
                     <span className="stream-title">
                       {entry.template?.title} ({entry.outlet?.name})

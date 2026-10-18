@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { NextRequest, NextResponse } from "next/server";
-import { resolveOrganizationId } from "@/lib/permissions";
+import { resolveOrganizationId, userHasPermission } from "@/lib/permissions";
 
 function safeJson(val: any, fallback: any = []) {
   if (typeof val !== "string") return val ?? fallback;
@@ -43,9 +43,15 @@ export async function POST(req: NextRequest) {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const user = session.user as { organizationId: string; role: string; email?: string };
-  if (user.role !== "ORG_ADMIN" && user.role !== "SUPER_ADMIN" && user.role !== "ADMIN") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const user = session.user as { organizationId: string; role: string; permissions?: string[]; email?: string };
+  const canManage =
+    user.role === "ORG_ADMIN" ||
+    user.role === "SUPER_ADMIN" ||
+    user.role === "ADMIN" ||
+    userHasPermission(user.permissions, "manage_roles", user.role);
+
+  if (!canManage) {
+    return NextResponse.json({ error: "Forbidden: Manage roles permission required" }, { status: 403 });
   }
 
   const organizationId = await resolveOrganizationId(user);
@@ -86,9 +92,15 @@ export async function PUT(req: NextRequest) {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const user = session.user as { organizationId: string; role: string; email?: string };
-  if (user.role !== "ORG_ADMIN" && user.role !== "SUPER_ADMIN" && user.role !== "ADMIN") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const user = session.user as { organizationId: string; role: string; permissions?: string[]; email?: string };
+  const canManage =
+    user.role === "ORG_ADMIN" ||
+    user.role === "SUPER_ADMIN" ||
+    user.role === "ADMIN" ||
+    userHasPermission(user.permissions, "manage_roles", user.role);
+
+  if (!canManage) {
+    return NextResponse.json({ error: "Forbidden: Manage roles permission required" }, { status: 403 });
   }
 
   const organizationId = await resolveOrganizationId(user);
@@ -136,9 +148,15 @@ export async function DELETE(req: NextRequest) {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const user = session.user as { organizationId: string; role: string; email?: string };
-  if (user.role !== "ORG_ADMIN" && user.role !== "SUPER_ADMIN" && user.role !== "ADMIN") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const user = session.user as { organizationId: string; role: string; permissions?: string[]; email?: string };
+  const canManage =
+    user.role === "ORG_ADMIN" ||
+    user.role === "SUPER_ADMIN" ||
+    user.role === "ADMIN" ||
+    userHasPermission(user.permissions, "manage_roles", user.role);
+
+  if (!canManage) {
+    return NextResponse.json({ error: "Forbidden: Manage roles permission required" }, { status: 403 });
   }
 
   const organizationId = await resolveOrganizationId(user);

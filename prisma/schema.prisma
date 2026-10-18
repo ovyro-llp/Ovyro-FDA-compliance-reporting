@@ -21,11 +21,55 @@ model Organization {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  users       User[]
-  outlets     Outlet[]
-  templates   FormTemplate[]
-  submissions FormSubmission[]
-  roles       CustomRole[]
+  contactPhone    String?
+  contactEmail    String?
+  monthlyFee      Float            @default(500)
+  billingStatus   String           @default("PENDING") // PAID | PENDING | OVERDUE | CANCELLED
+  nextBillingDate DateTime?
+
+  // Dodo Payments Subscription & Sync Fields
+  dodoSubscriptionId String?       @unique
+  dodoCustomerId     String?
+  dodoProductId      String?
+  billingInterval    String?       @default("MONTHLY") // MONTHLY | ANNUAL
+  paymentProvider    String        @default("DODO_PAYMENTS")
+  lastPaymentDate    DateTime?
+
+  users           User[]
+  outlets         Outlet[]
+  templates       FormTemplate[]
+  submissions     FormSubmission[]
+  roles           CustomRole[]
+  billingRecords  ClientBilling[]
+}
+
+model ClientBilling {
+  id              String       @id @default(cuid())
+  organizationId  String
+  amount          Float        @default(500)
+  currency        String       @default("INR")
+  billingCycle    String       @default("MONTHLY") // MONTHLY | ANNUAL
+  status          String       @default("PENDING") // PAID | PENDING | OVERDUE | CANCELLED
+  invoiceNumber   String?
+  dueDate         DateTime     @default(now())
+  paidAt          DateTime?
+  paymentMethod   String?      @default("DODO_PAYMENTS")
+  notes           String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  // Dodo Payments Transaction & Checkout Fields
+  dodoPaymentId      String?
+  dodoSessionId      String?
+  dodoSubscriptionId String?
+  checkoutUrl        String?
+
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([dodoSessionId])
+  @@index([dodoSubscriptionId])
 }
 
 model CustomRole {

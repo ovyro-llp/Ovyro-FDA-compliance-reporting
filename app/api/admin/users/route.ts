@@ -1,7 +1,8 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { NextRequest, NextResponse } from "next/server";
-import { resolveOrganizationId } from "@/lib/permissions";
+import { resolveOrganizationId, userHasPermission } from "@/lib/permissions";
+import { verifyPaywallOrReject } from "@/lib/paywall";
 import bcrypt from "bcryptjs";
 
 function safeJson(val: any, fallback: any = []) {
@@ -17,9 +18,15 @@ export async function GET(req: NextRequest) {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const user = session.user as { organizationId: string; role: string; email?: string };
-  if (user.role !== "ORG_ADMIN" && user.role !== "SUPER_ADMIN" && user.role !== "ADMIN") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const user = session.user as { organizationId: string; role: string; permissions?: string[]; email?: string };
+  const canManage =
+    user.role === "ORG_ADMIN" ||
+    user.role === "SUPER_ADMIN" ||
+    user.role === "ADMIN" ||
+    userHasPermission(user.permissions, "manage_team", user.role);
+
+  if (!canManage) {
+    return NextResponse.json({ error: "Forbidden: Manage team permission required" }, { status: 403 });
   }
 
   const organizationId = await resolveOrganizationId(user);
@@ -69,12 +76,20 @@ export async function POST(req: NextRequest) {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const user = session.user as { organizationId: string; role: string; email?: string };
-  if (user.role !== "ORG_ADMIN" && user.role !== "SUPER_ADMIN" && user.role !== "ADMIN") {
-    return NextResponse.json({ error: "Forbidden: Admin access required" }, { status: 403 });
+  const user = session.user as { organizationId: string; role: string; permissions?: string[]; email?: string };
+  const canManage =
+    user.role === "ORG_ADMIN" ||
+    user.role === "SUPER_ADMIN" ||
+    user.role === "ADMIN" ||
+    userHasPermission(user.permissions, "manage_team", user.role);
+
+  if (!canManage) {
+    return NextResponse.json({ error: "Forbidden: Manage team permission required" }, { status: 403 });
   }
 
   const organizationId = await resolveOrganizationId(user);
+  const paywallBlock = await verifyPaywallOrReject(organizationId, user);
+  if (paywallBlock) return paywallBlock;
 
   const { name, email, password, role, customRoleId, permissions, outletIds, templateAccess } = await req.json();
 
@@ -96,8 +111,8 @@ export async function POST(req: NextRequest) {
 
   let validCustomRoleId = customRoleId || null;
   if (validCustomRoleId) {
-    const roleExists = await prisma.customRole.findUnique({
-      where: { id: validCustomRoleId },
+    const roleExists = await prisma.customRole.findFirst({
+      where: { id: validCustomRoleId, organizationId },
       select: { id: true },
     });
     if (!roleExists) validCustomRoleId = null;
@@ -167,22 +182,39 @@ export async function PATCH(req: NextRequest) {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const user = session.user as { organizationId: string; role: string; email?: string };
-  if (user.role !== "ORG_ADMIN" && user.role !== "SUPER_ADMIN" && user.role !== "ADMIN") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const user = session.user as { organizationId: string; role: string; permissions?: string[]; email?: string };
+  const canManage =
+    user.role === "ORG_ADMIN" ||
+    user.role === "SUPER_ADMIN" ||
+    user.role === "ADMIN" ||
+    userHasPermission(user.permissions, "manage_team", user.role);
+
+  if (!canManage) {
+    return NextResponse.json({ error: "Forbidden: Manage team permission required" }, { status: 403 });
   }
 
   const organizationId = await resolveOrganizationId(user);
+  const paywallBlock = await verifyPaywallOrReject(organizationId, user);
+  if (paywallBlock) return paywallBlock;
+
   const { id, name, role, customRoleId, permissions, isActive, password, outletIds, templateAccess } = await req.json();
   if (!id) return NextResponse.json({ error: "Missing user id" }, { status: 400 });
+
+  // Multi-tenant IDOR protection: Verify target user belongs to the current organization
+  const existingUser = await prisma.user.findFirst({
+    where: { id, organizationId },
+  });
+  if (!existingUser) {
+    return NextResponse.json({ error: "User not found or access denied" }, { status: 404 });
+  }
 
   const updateData: any = {};
   if (name !== undefined) updateData.name = name;
   if (role !== undefined) updateData.role = role;
   if (customRoleId !== undefined) {
     if (customRoleId) {
-      const roleExists = await prisma.customRole.findUnique({
-        where: { id: customRoleId },
+      const roleExists = await prisma.customRole.findFirst({
+        where: { id: customRoleId, organizationId },
         select: { id: true },
       });
       updateData.customRoleId = roleExists ? customRoleId : null;
@@ -249,5 +281,50 @@ export async function PATCH(req: NextRequest) {
   }
 
   return NextResponse.json({ success: true, user: updatedUser });
+}
+
+export async function DELETE(req: NextRequest) {
+  const session = await auth();
+  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const user = session.user as { organizationId: string; role: string; permissions?: string[]; email?: string };
+  const canManage =
+    user.role === "ORG_ADMIN" ||
+    user.role === "SUPER_ADMIN" ||
+    user.role === "ADMIN" ||
+    userHasPermission(user.permissions, "manage_team", user.role);
+
+  if (!canManage) {
+    return NextResponse.json({ error: "Forbidden: Manage team permission required" }, { status: 403 });
+  }
+
+  const organizationId = await resolveOrganizationId(user);
+  const paywallBlock = await verifyPaywallOrReject(organizationId, user);
+  if (paywallBlock) return paywallBlock;
+
+  const { searchParams } = new URL(req.url);
+  const id = searchParams.get("id");
+
+  if (!id) return NextResponse.json({ error: "User ID is required" }, { status: 400 });
+
+  // Prevent user deleting themselves
+  if (session.user.id === id) {
+    return NextResponse.json({ error: "Cannot delete your own account" }, { status: 400 });
+  }
+
+  const existing = await prisma.user.findFirst({
+    where: { id, organizationId },
+  });
+
+  if (!existing) {
+    return NextResponse.json({ error: "User not found" }, { status: 404 });
+  }
+
+  // Cascade cleanup relations
+  await prisma.userOutlet.deleteMany({ where: { userId: id } });
+  await prisma.userTemplateAccess.deleteMany({ where: { userId: id } });
+  await prisma.user.delete({ where: { id } });
+
+  return NextResponse.json({ success: true, message: "User removed successfully" });
 }
 

@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { NextRequest, NextResponse } from "next/server";
 import { userHasPermission, resolveOrganizationId } from "@/lib/permissions";
+import { verifyPaywallOrReject } from "@/lib/paywall";
 
 function safeJson(val: any, fallback: any = {}) {
   if (typeof val !== "string") return val ?? fallback;
@@ -71,6 +72,9 @@ export async function PUT(
   }
 
   const organizationId = await resolveOrganizationId(user);
+  const paywallBlock = await verifyPaywallOrReject(organizationId, user);
+  if (paywallBlock) return paywallBlock;
+
   const { id } = await params;
   const body = await req.json();
 
@@ -162,6 +166,9 @@ export async function PATCH(
   }
 
   const organizationId = await resolveOrganizationId(user);
+  const paywallBlock = await verifyPaywallOrReject(organizationId, user);
+  if (paywallBlock) return paywallBlock;
+
   const { id } = await params;
 
   try {
@@ -217,6 +224,9 @@ export async function DELETE(
   }
 
   const organizationId = await resolveOrganizationId(user);
+  const paywallBlock = await verifyPaywallOrReject(organizationId, user);
+  if (paywallBlock) return paywallBlock;
+
   const { id } = await params;
 
   try {

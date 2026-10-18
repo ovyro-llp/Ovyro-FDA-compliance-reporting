@@ -235,8 +235,20 @@ export async function POST(req: NextRequest) {
     });
   } catch (error: any) {
     console.error("[REGISTER_ERROR]", error);
+    const msg = String(error?.message || "");
+    const isDbError =
+      msg.includes("PrismaClient") ||
+      msg.includes("database server") ||
+      msg.includes("Can't reach database") ||
+      msg.includes("FATAL") ||
+      msg.includes("tenant/user");
+
     return NextResponse.json(
-      { error: error.message || "Failed to create account. Please try again." },
+      {
+        error: isDbError
+          ? "Database service is temporarily unavailable. Please verify database connectivity."
+          : (error.message || "Failed to create account. Please try again."),
+      },
       { status: 500 }
     );
   }

@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { NextRequest, NextResponse } from "next/server";
 import { resolveOrganizationId, resolveUserId } from "@/lib/permissions";
+import { verifyPaywallOrReject } from "@/lib/paywall";
 
 function safeJson(val: any, fallback: any = {}) {
   if (typeof val !== "string") return val ?? fallback;
@@ -10,6 +11,69 @@ function safeJson(val: any, fallback: any = {}) {
   } catch {
     return fallback;
   }
+}
+
+/**
+ * Deterministically computes the compliance score server-side from recorded audit checkpoints
+ * to prevent client-side manipulation of regulatory food safety & hygiene scorecards.
+ */
+function computeComplianceScore(dataPayload: any, clientScore?: number): number {
+  const dataObj = typeof dataPayload === "string" ? safeJson(dataPayload, {}) : (dataPayload || {});
+  const checkpoints = dataObj.checkpoints || {};
+  const items = Object.values(checkpoints) as any[];
+
+  if (items.length === 0) {
+    if (clientScore !== undefined && !isNaN(Number(clientScore))) {
+      return Math.max(0, Math.min(100, Math.round(Number(clientScore))));
+    }
+    return 100;
+  }
+
+  let total = 0;
+  let passed = 0;
+
+  for (const cp of items) {
+    if (!cp || typeof cp !== "object") continue;
+    const type = cp.itemType || "STATUS";
+
+    if (type === "STATUS") {
+      if (cp.status === "NA" || cp.status === "N/A") continue;
+      total++;
+      if (cp.status === "YES" || cp.status === "PASS" || cp.status === true) passed++;
+    } else if (type === "CLEAN_DIRTY") {
+      if (cp.status === "NA" || cp.status === "N/A") continue;
+      total++;
+      if (cp.status === "CLEAN" || cp.status === "YES") passed++;
+    } else if (type === "TEMPERATURE") {
+      if (cp.temp === "NA" || cp.temp === "N/A" || !cp.temp) continue;
+      total++;
+      const tVal = parseFloat(cp.temp);
+      if (!isNaN(tVal)) {
+        const min = cp.min ?? -20;
+        const max = cp.max ?? 10;
+        if (tVal >= min && tVal <= max) passed++;
+      }
+    } else if (type === "NUMERIC") {
+      if (cp.value === "NA" || cp.value === "N/A" || cp.value === "") continue;
+      total++;
+      const nVal = parseFloat(cp.value);
+      if (!isNaN(nVal)) {
+        const hasMin = cp.min !== undefined && cp.min !== null;
+        const hasMax = cp.max !== undefined && cp.max !== null;
+        if (hasMin && hasMax) {
+          if (nVal >= cp.min && nVal <= cp.max) passed++;
+        } else {
+          passed++;
+        }
+      }
+    }
+  }
+
+  if (total === 0) {
+    return clientScore !== undefined ? Math.max(0, Math.min(100, Math.round(Number(clientScore)))) : 100;
+  }
+
+  return Math.max(0, Math.min(100, Math.round((passed / total) * 100)));
 }
 
 export async function POST(req: NextRequest) {
@@ -27,6 +91,10 @@ export async function POST(req: NextRequest) {
 
   const organizationId = await resolveOrganizationId(user);
   const validUserId = (await resolveUserId(user)) || user.id;
+
+  // Enforce Dodo Payments Subscription Paywall for submissions
+  const paywallBlock = await verifyPaywallOrReject(organizationId, user);
+  if (paywallBlock) return paywallBlock;
 
   try {
     const body = await req.json();
@@ -62,6 +130,7 @@ export async function POST(req: NextRequest) {
     }
 
     const dataString = typeof data === "string" ? data : JSON.stringify(data || {});
+    const verifiedScore = computeComplianceScore(dataString, complianceScore);
 
     if (id) {
       const existing = await prisma.formSubmission.findFirst({
@@ -70,6 +139,18 @@ export async function POST(req: NextRequest) {
 
       if (!existing) {
         return NextResponse.json({ error: "Submission not found" }, { status: 404 });
+      }
+
+      // Check edit permissions: admins, supervisors, or original submitter
+      const canEdit =
+        user.role === "ORG_ADMIN" ||
+        user.role === "SUPER_ADMIN" ||
+        user.role === "ADMIN" ||
+        user.role === "SUPERVISOR" ||
+        existing.submittedById === validUserId;
+
+      if (!canEdit) {
+        return NextResponse.json({ error: "Forbidden: Not permitted to modify this submission" }, { status: 403 });
       }
 
       const updated = await prisma.formSubmission.update({
@@ -82,7 +163,7 @@ export async function POST(req: NextRequest) {
           supervisorName: supervisorName !== undefined ? supervisorName : existing.supervisorName,
           supervisorSigned: supervisorSigned !== undefined ? supervisorSigned : existing.supervisorSigned,
           signatureData: signatureData !== undefined ? signatureData : existing.signatureData,
-          complianceScore: complianceScore !== undefined ? complianceScore : existing.complianceScore,
+          complianceScore: data !== undefined ? verifiedScore : (complianceScore !== undefined ? verifiedScore : existing.complianceScore),
           status: status || existing.status,
         },
       });
@@ -114,7 +195,7 @@ export async function POST(req: NextRequest) {
           supervisorName: supervisorName || existingSameShift.supervisorName,
           supervisorSigned: supervisorSigned !== undefined ? supervisorSigned : existingSameShift.supervisorSigned,
           signatureData: signatureData || existingSameShift.signatureData,
-          complianceScore: complianceScore !== undefined ? complianceScore : existingSameShift.complianceScore,
+          complianceScore: verifiedScore,
           status: status || "SUBMITTED",
         },
       });
@@ -137,7 +218,7 @@ export async function POST(req: NextRequest) {
         supervisorName: supervisorName || "",
         supervisorSigned: !!supervisorSigned,
         signatureData: signatureData || null,
-        complianceScore: complianceScore || 100,
+        complianceScore: verifiedScore,
         data: dataString,
         comments: comments || "",
         correctiveAction: correctiveAction || "",
