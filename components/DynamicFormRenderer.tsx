@@ -646,13 +646,13 @@ function getInitialDataForSchema(
     <div className="dynamic-sheet-container">
       {/* Clean Minimal Header */}
       <div className="sheet-header-minimal">
-        <div className="flex items-center justify-between mb-2">
+        <div className="hidden sm:flex items-center justify-between mb-2">
           <button
             type="button"
             onClick={() => router.push("/dashboard")}
             className="flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors"
           >
-            ← Back
+            ← Dashboard
           </button>
           <span className="text-xs font-semibold text-slate-500">
             {outlet.name}
@@ -714,16 +714,16 @@ function getInitialDataForSchema(
               {sections.map((sec: any) => {
                 const secItems = sec.items || [];
                 return (
-                  <div key={sec.id} className="table-card">
-                    <div className="table-header-bar">
+                  <div key={sec.id} className="checklist-section-card">
+                    <div className="checklist-section-header">
                       <div>
-                        <h3>{sec.title}</h3>
-                        <span className="item-count-badge">{secItems.length} checkpoints</span>
+                        <h2 className="checklist-section-title">{sec.title}</h2>
+                        <span className="checklist-section-count">{secItems.length} checkpoints</span>
                       </div>
-                      <div className="quick-action-bar">
+                      <div className="checklist-batch-actions">
                         <button
                           type="button"
-                          className="quick-btn-action yes"
+                          className="batch-btn pass"
                           onClick={() => {
                             const updatedCheckpoints = { ...(formData.checkpoints || {}) };
                             secItems.forEach((it: any) => {
@@ -752,7 +752,7 @@ function getInitialDataForSchema(
                         </button>
                         <button
                           type="button"
-                          className="quick-btn-action na"
+                          className="batch-btn na"
                           onClick={() => {
                             const updatedCheckpoints = { ...(formData.checkpoints || {}) };
                             secItems.forEach((it: any) => {
@@ -773,7 +773,7 @@ function getInitialDataForSchema(
                         </button>
                         <button
                           type="button"
-                          className="quick-btn-action no"
+                          className="batch-btn fail"
                           onClick={() => {
                             const updatedCheckpoints = { ...(formData.checkpoints || {}) };
                             secItems.forEach((it: any) => {
@@ -794,201 +794,134 @@ function getInitialDataForSchema(
                       </div>
                     </div>
 
-                    <div className="table-responsive">
-                      <table className="audit-table">
-                        <thead>
-                          <tr>
-                            <th>Checkpoint / Parameter</th>
-                            <th>Verification & Reading</th>
-                            <th>Assigned Staff</th>
-                            <th>Time</th>
-                            <th style={{ width: "160px" }}>Notes / CAPA</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {secItems.map((item: any, idx: number) => {
-                            const itemType = item.itemType || (item.targetMinTemp !== undefined ? "TEMPERATURE" : "STATUS");
-                            const min = item.targetMinTemp ?? item.targetMin;
-                            const max = item.targetMaxTemp ?? item.targetMax;
-                            const unit = item.unit || (itemType === "TEMPERATURE" ? "°C" : "");
+                    <div className="checklist-items-stack">
+                      {secItems.map((item: any, idx: number) => {
+                        const itemType = item.itemType || (item.targetMinTemp !== undefined ? "TEMPERATURE" : "STATUS");
+                        const min = item.targetMinTemp ?? item.targetMin;
+                        const max = item.targetMaxTemp ?? item.targetMax;
+                        const unit = item.unit || (itemType === "TEMPERATURE" ? "°C" : "");
 
-                            const cp = (formData.checkpoints && formData.checkpoints[item.id]) || {
-                              id: item.id,
-                              name: item.name || item.task,
-                              itemType,
-                              status: itemType === "CLEAN_DIRTY" ? "CLEAN" : "YES",
-                              value: item.targetValue !== undefined ? String(item.targetValue) : "",
-                              temp: itemType === "TEMPERATURE" && min !== undefined && max !== undefined ? ((min + max) / 2).toFixed(1) : "",
-                              time: item.defaultTime || "09:00",
-                              assignee: item.defaultAssignee || availableStaff[0] || "Staff Member",
-                              notes: "",
-                              min,
-                              max,
-                              unit,
-                            };
+                        const cp = (formData.checkpoints && formData.checkpoints[item.id]) || {
+                          id: item.id,
+                          name: item.name || item.task,
+                          itemType,
+                          status: itemType === "CLEAN_DIRTY" ? "CLEAN" : "YES",
+                          value: item.targetValue !== undefined ? String(item.targetValue) : "",
+                          temp: itemType === "TEMPERATURE" && min !== undefined && max !== undefined ? ((min + max) / 2).toFixed(1) : "",
+                          time: item.defaultTime || "09:00",
+                          assignee: item.defaultAssignee || availableStaff[0] || "Staff Member",
+                          notes: "",
+                          min,
+                          max,
+                          unit,
+                        };
 
-                            const updateCp = (changes: any) => {
-                              setFormData({
-                                ...formData,
-                                checkpoints: {
-                                  ...(formData.checkpoints || {}),
-                                  [item.id]: { ...cp, ...changes },
-                                },
-                              });
-                            };
+                        const updateCp = (changes: any) => {
+                          setFormData({
+                            ...formData,
+                            checkpoints: {
+                              ...(formData.checkpoints || {}),
+                              [item.id]: { ...cp, ...changes },
+                            },
+                          });
+                        };
 
-                            return (
-                              <tr key={item.id || idx}>
-                                <td>
-                                  <div className="font-semibold">{item.name || item.task}</div>
-                                  {item.hint && <div style={{ fontSize: "0.75rem", color: "#64748b", marginTop: "2px" }}>{item.hint}</div>}
-                                  {(min !== undefined || max !== undefined) && (
-                                    <span className="safe-range-badge" style={{ marginTop: "4px", display: "inline-block" }}>
-                                      Safe Range: {min !== undefined ? `${min}` : "-∞"} to {max !== undefined ? `${max}` : "+∞"} {unit}
+                        const isBreach =
+                          itemType === "TEMPERATURE" &&
+                          cp.temp &&
+                          cp.temp !== "N/A" &&
+                          !isNaN(parseFloat(cp.temp)) &&
+                          ((min !== undefined && parseFloat(cp.temp) < min) || (max !== undefined && parseFloat(cp.temp) > max));
+
+                        return (
+                          <div key={item.id || idx} className={`checkpoint-card ${isBreach ? "card-breach" : ""}`}>
+                            <div className="checkpoint-card-top">
+                              <div className="checkpoint-name">{item.name || item.task}</div>
+                              {item.hint && <div className="checkpoint-hint">{item.hint}</div>}
+                              {(min !== undefined || max !== undefined) && (
+                                <span className="checkpoint-safe-badge">
+                                  Safe: {min !== undefined ? `${min}` : "-∞"} to {max !== undefined ? `${max}` : "+∞"} {unit}
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="checkpoint-action-row">
+                              {itemType === "TEMPERATURE" && (
+                                <div className="temp-control-wrap">
+                                  <TouchTempSelect
+                                    value={cp.temp}
+                                    min={min ?? -20}
+                                    max={max ?? 10}
+                                    onChange={(val) => updateCp({ temp: val })}
+                                  />
+                                  {cp.temp && cp.temp !== "N/A" && (
+                                    <span className={!isBreach ? "optimal-tag" : "breach-tag"}>
+                                      {!isBreach ? "✓ In Spec" : "⚠️ Breach"}
                                     </span>
                                   )}
-                                </td>
-                                <td>
-                                  {/* RENDER BY ITEM TYPE */}
-                                  {itemType === "TEMPERATURE" && (
-                                    <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-                                      <TouchTempSelect
-                                        value={cp.temp}
-                                        min={min ?? -20}
-                                        max={max ?? 10}
-                                        onChange={(val) => updateCp({ temp: val })}
-                                      />
-                                      {cp.temp && cp.temp !== "N/A" && (
-                                        <span style={{ fontSize: "0.8rem", whiteSpace: "nowrap" }}>
-                                          {parseFloat(cp.temp) >= (min ?? -20) && parseFloat(cp.temp) <= (max ?? 10) ? (
-                                            <span className="optimal-tag">✓ In Spec</span>
-                                          ) : (
-                                            <span className="breach-tag">⚠️ Breach</span>
-                                          )}
-                                        </span>
-                                      )}
-                                    </div>
-                                  )}
+                                </div>
+                              )}
 
-                                  {itemType === "NUMERIC" && (
-                                    <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
-                                      <input
-                                        type="number"
-                                        step="any"
-                                        value={cp.value ?? ""}
-                                        placeholder={`Value (${unit || "qty"})`}
-                                        onChange={(e) => updateCp({ value: e.target.value })}
-                                        className="control-input"
-                                        style={{ width: "120px", padding: "6px 8px" }}
-                                      />
-                                      {unit && <span style={{ fontWeight: 600, fontSize: "0.85rem", color: "#64748b" }}>{unit}</span>}
-                                      <button
-                                        type="button"
-                                        className={`na-toggle-btn ${cp.value === "N/A" ? "active" : ""}`}
-                                        onClick={() => updateCp({ value: cp.value === "N/A" ? "" : "N/A" })}
-                                      >
-                                        N/A
-                                      </button>
-                                      {cp.value && cp.value !== "N/A" && (
-                                        <span>
-                                          {(() => {
-                                            const num = parseFloat(cp.value);
-                                            if (isNaN(num)) return null;
-                                            const breach = (min !== undefined && num < min) || (max !== undefined && num > max);
-                                            return breach ? (
-                                              <span className="breach-tag">⚠️ Breach</span>
-                                            ) : (
-                                              <span className="optimal-tag">✓ In Range</span>
-                                            );
-                                          })()}
-                                        </span>
-                                      )}
-                                    </div>
-                                  )}
-
-                                  {itemType === "CLEAN_DIRTY" && (
-                                    <CleanDirtyNaToggle
-                                      value={cp.status}
-                                      onChange={(val) => updateCp({ status: val })}
-                                    />
-                                  )}
-
-                                  {itemType === "STATUS" && (
-                                    <YesNoNaToggle
-                                      value={cp.status}
-                                      onChange={(val) => updateCp({ status: val })}
-                                    />
-                                  )}
-
-                                  {itemType === "TEXT" && (
-                                    <input
-                                      type="text"
-                                      value={cp.value || ""}
-                                      placeholder="Enter notes or observations..."
-                                      onChange={(e) => updateCp({ value: e.target.value })}
-                                      className="control-input"
-                                      style={{ width: "100%", minWidth: "150px", padding: "6px 8px" }}
-                                    />
-                                  )}
-
-                                  {itemType === "TIME" && (
-                                    <select
-                                      value={cp.time || "09:00"}
-                                      onChange={(e) => updateCp({ time: e.target.value })}
-                                      className="table-select touch-time-select"
-                                    >
-                                      {TIME_OPTIONS.map((t) => (
-                                        <option key={t} value={t}>
-                                          {formatTimeSlot(t)}
-                                        </option>
-                                      ))}
-                                    </select>
-                                  )}
-                                </td>
-
-                                <td>
-                                  <select
-                                    value={cp.assignee || availableStaff[0]}
-                                    onChange={(e) => updateCp({ assignee: e.target.value })}
-                                    className="table-select"
-                                  >
-                                    {availableStaff.map((staff) => (
-                                      <option key={staff} value={staff}>
-                                        {staff}
-                                      </option>
-                                    ))}
-                                  </select>
-                                </td>
-
-                                <td>
-                                  <select
-                                    value={cp.time || "09:00"}
-                                    onChange={(e) => updateCp({ time: e.target.value })}
-                                    className="table-select touch-time-select"
-                                  >
-                                    {TIME_OPTIONS.map((t) => (
-                                      <option key={t} value={t}>
-                                        {formatTimeSlot(t)}
-                                      </option>
-                                    ))}
-                                  </select>
-                                </td>
-
-                                <td>
+                              {itemType === "NUMERIC" && (
+                                <div className="numeric-control-wrap">
                                   <input
-                                    type="text"
-                                    value={cp.notes || ""}
-                                    placeholder="Optional notes..."
-                                    onChange={(e) => updateCp({ notes: e.target.value })}
+                                    type="number"
+                                    step="any"
+                                    value={cp.value ?? ""}
+                                    placeholder={`Value (${unit || "qty"})`}
+                                    onChange={(e) => updateCp({ value: e.target.value })}
                                     className="control-input"
-                                    style={{ fontSize: "0.8rem", padding: "4px 8px" }}
                                   />
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
+                                  {unit && <span className="text-xs font-semibold text-slate-500">{unit}</span>}
+                                  <button
+                                    type="button"
+                                    className={`na-toggle-btn ${cp.value === "N/A" ? "active" : ""}`}
+                                    onClick={() => updateCp({ value: cp.value === "N/A" ? "" : "N/A" })}
+                                  >
+                                    N/A
+                                  </button>
+                                </div>
+                              )}
+
+                              {itemType === "CLEAN_DIRTY" && (
+                                <CleanDirtyNaToggle
+                                  value={cp.status}
+                                  onChange={(val) => updateCp({ status: val })}
+                                />
+                              )}
+
+                              {itemType === "STATUS" && (
+                                <YesNoNaToggle
+                                  value={cp.status}
+                                  onChange={(val) => updateCp({ status: val })}
+                                />
+                              )}
+
+                              {itemType === "TEXT" && (
+                                <input
+                                  type="text"
+                                  value={cp.value || ""}
+                                  placeholder="Observation or remark..."
+                                  onChange={(e) => updateCp({ value: e.target.value })}
+                                  className="control-input w-full"
+                                />
+                              )}
+                            </div>
+
+                            {(cp.status === "NO" || cp.status === "DIRTY" || isBreach || cp.notes) && (
+                              <div className="checkpoint-note-box">
+                                <input
+                                  type="text"
+                                  value={cp.notes || ""}
+                                  placeholder="Observation or corrective action..."
+                                  onChange={(e) => updateCp({ notes: e.target.value })}
+                                  className="checkpoint-note-input"
+                                />
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 );
@@ -996,18 +929,18 @@ function getInitialDataForSchema(
             </div>
           )}
 
-          {/* 1. HOUSEKEEPING / MULTI-SHIFT CHECKLIST (Legacy) */}
+          {/* 1. HOUSEKEEPING / MULTI-SHIFT CHECKLIST */}
           {!isDynamicTemplate && template.category === "HOUSEKEEPING" && (
-            <div className="table-card">
-              <div className="table-header-bar">
+            <div className="checklist-section-card">
+              <div className="checklist-section-header">
                 <div>
-                  <h3>{sections[0]?.title || "Housekeeping & Sanitization Zones"}</h3>
-                  <span className="item-count-badge">{(formData.items || []).length} checkpoints</span>
+                  <h2 className="checklist-section-title">{sections[0]?.title || "Housekeeping & Sanitization"}</h2>
+                  <span className="checklist-section-count">{(formData.items || []).length} checkpoints</span>
                 </div>
-                <div className="quick-action-bar">
+                <div className="checklist-batch-actions">
                   <button
                     type="button"
-                    className="quick-btn-action yes"
+                    className="batch-btn pass"
                     onClick={() => {
                       setFormData({
                         ...formData,
@@ -1019,7 +952,7 @@ function getInitialDataForSchema(
                   </button>
                   <button
                     type="button"
-                    className="quick-btn-action na"
+                    className="batch-btn na"
                     onClick={() => {
                       setFormData({
                         ...formData,
@@ -1029,85 +962,42 @@ function getInitialDataForSchema(
                   >
                     All N/A
                   </button>
-                  <button
-                    type="button"
-                    className="quick-btn-action no"
-                    onClick={() => {
-                      setFormData({
-                        ...formData,
-                        items: (formData.items || []).map((i: any) => ({ ...i, status: "NO" })),
-                      });
-                    }}
-                  >
-                    All Fail
-                  </button>
                 </div>
               </div>
 
-              <div className="table-responsive">
-                <table className="audit-table">
-                  <thead>
-                    <tr>
-                      <th>Zone / Area</th>
-                      <th>Assigned Cleaner</th>
-                      <th>Clean Time</th>
-                      <th style={{ width: "220px", textAlign: "center" }}>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(formData.items || []).map((item: any, idx: number) => (
-                      <tr key={item.id || idx}>
-                        <td>
-                          <span className="font-semibold">{item.name}</span>
-                        </td>
-                        <td>
-                          <select
-                            value={item.cleanedBy || ""}
-                            onChange={(e) => {
-                              const newItems = [...(formData.items || [])];
-                              newItems[idx] = { ...item, cleanedBy: e.target.value };
-                              setFormData({ ...formData, items: newItems });
-                            }}
-                            className="table-select"
-                          >
-                            {availableStaff.map((staff) => (
-                              <option key={staff} value={staff}>
-                                {staff}
-                              </option>
-                            ))}
-                          </select>
-                        </td>
-                        <td>
-                          <select
-                            value={item.time || "09:00"}
-                            onChange={(e) => {
-                              const newItems = [...(formData.items || [])];
-                              newItems[idx] = { ...item, time: e.target.value };
-                              setFormData({ ...formData, items: newItems });
-                            }}
-                            className="table-select touch-time-select"
-                          >
-                            {TIME_OPTIONS.map((t) => (
-                              <option key={t} value={t}>
-                                {formatTimeSlot(t)}
-                              </option>
-                            ))}
-                          </select>
-                        </td>
-                        <td style={{ textAlign: "center" }}>
-                          <YesNoNaToggle
-                            value={item.status}
-                            onChange={(val) => {
-                              const newItems = [...(formData.items || [])];
-                              newItems[idx] = { ...item, status: val };
-                              setFormData({ ...formData, items: newItems });
-                            }}
-                          />
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="checklist-items-stack">
+                {(formData.items || []).map((item: any, idx: number) => (
+                  <div key={item.id || idx} className="checkpoint-card">
+                    <div className="checkpoint-card-top">
+                      <span className="checkpoint-name">{item.name}</span>
+                      <div className="checkpoint-action-row">
+                        <YesNoNaToggle
+                          value={item.status}
+                          onChange={(val) => {
+                            const newItems = [...(formData.items || [])];
+                            newItems[idx] = { ...item, status: val };
+                            setFormData({ ...formData, items: newItems });
+                          }}
+                        />
+                      </div>
+                    </div>
+                    {(item.status === "NO" || item.notes) && (
+                      <div className="checkpoint-note-box">
+                        <input
+                          type="text"
+                          value={item.notes || ""}
+                          placeholder="Observation or corrective note..."
+                          onChange={(e) => {
+                            const newItems = [...(formData.items || [])];
+                            newItems[idx] = { ...item, notes: e.target.value };
+                            setFormData({ ...formData, items: newItems });
+                          }}
+                          className="checkpoint-note-input"
+                        />
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
           )}
@@ -1120,16 +1010,16 @@ function getInitialDataForSchema(
                   (sec.items || []).some((i: any) => i.id === ci.id || i.name === ci.name)
                 );
                 return (
-                  <div key={sec.id} className="table-card">
-                    <div className="table-header-bar">
+                  <div key={sec.id} className="checklist-section-card">
+                    <div className="checklist-section-header">
                       <div>
-                        <h3>{sec.title}</h3>
-                        <span className="item-count-badge">{secItems.length} units</span>
+                        <h2 className="checklist-section-title">{sec.title}</h2>
+                        <span className="checklist-section-count">{secItems.length} units</span>
                       </div>
-                      <div className="quick-action-bar">
+                      <div className="checklist-batch-actions">
                         <button
                           type="button"
-                          className="quick-btn-action yes"
+                          className="batch-btn pass"
                           onClick={() => {
                             const updated = (formData.completedItems || []).map((ci: any) => {
                               if ((sec.items || []).some((i: any) => i.id === ci.id || i.name === ci.name)) {
@@ -1144,7 +1034,7 @@ function getInitialDataForSchema(
                         </button>
                         <button
                           type="button"
-                          className="quick-btn-action na"
+                          className="batch-btn na"
                           onClick={() => {
                             const updated = (formData.completedItems || []).map((ci: any) => {
                               if ((sec.items || []).some((i: any) => i.id === ci.id || i.name === ci.name)) {
@@ -1157,74 +1047,47 @@ function getInitialDataForSchema(
                         >
                           All N/A
                         </button>
-                        <button
-                          type="button"
-                          className="quick-btn-action no"
-                          onClick={() => {
-                            const updated = (formData.completedItems || []).map((ci: any) => {
-                              if ((sec.items || []).some((i: any) => i.id === ci.id || i.name === ci.name)) {
-                                return { ...ci, status: "NO" };
-                              }
-                              return ci;
-                            });
-                            setFormData({ ...formData, completedItems: updated });
-                          }}
-                        >
-                          All Fail
-                        </button>
                       </div>
                     </div>
-                    <div className="table-responsive">
-                      <table className="audit-table">
-                        <thead>
-                          <tr>
-                            <th>Equipment</th>
-                            <th>Cleaned By</th>
-                            <th style={{ width: "220px", textAlign: "center" }}>Status</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {secItems.map((ci: any, idx: number) => {
-                            const globalIdx = (formData.completedItems || []).findIndex(
-                              (x: any) => x.id === ci.id
-                            );
-                            return (
-                              <tr key={ci.id || idx}>
-                                <td>
-                                  <span className="font-semibold">{ci.name}</span>
-                                </td>
-                                <td>
-                                  <select
-                                    value={ci.cleanedBy || ""}
-                                    onChange={(e) => {
-                                      const newItems = [...formData.completedItems];
-                                      newItems[globalIdx] = { ...ci, cleanedBy: e.target.value };
-                                      setFormData({ ...formData, completedItems: newItems });
-                                    }}
-                                    className="table-select"
-                                  >
-                                    {availableStaff.map((staff) => (
-                                      <option key={staff} value={staff}>
-                                        {staff}
-                                      </option>
-                                    ))}
-                                  </select>
-                                </td>
-                                <td style={{ textAlign: "center" }}>
-                                  <YesNoNaToggle
-                                    value={ci.status}
-                                    onChange={(val) => {
-                                      const newItems = [...formData.completedItems];
-                                      newItems[globalIdx] = { ...ci, status: val };
-                                      setFormData({ ...formData, completedItems: newItems });
-                                    }}
-                                  />
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
+
+                    <div className="checklist-items-stack">
+                      {secItems.map((ci: any, idx: number) => {
+                        const globalIdx = (formData.completedItems || []).findIndex(
+                          (x: any) => x.id === ci.id
+                        );
+                        return (
+                          <div key={ci.id || idx} className="checkpoint-card">
+                            <div className="checkpoint-card-top">
+                              <span className="checkpoint-name">{ci.name}</span>
+                              <div className="checkpoint-action-row">
+                                <YesNoNaToggle
+                                  value={ci.status}
+                                  onChange={(val) => {
+                                    const newItems = [...formData.completedItems];
+                                    newItems[globalIdx] = { ...ci, status: val };
+                                    setFormData({ ...formData, completedItems: newItems });
+                                  }}
+                                />
+                              </div>
+                            </div>
+                            {(ci.status === "NO" || ci.notes) && (
+                              <div className="checkpoint-note-box">
+                                <input
+                                  type="text"
+                                  value={ci.notes || ""}
+                                  placeholder="Observation or corrective note..."
+                                  onChange={(e) => {
+                                    const newItems = [...formData.completedItems];
+                                    newItems[globalIdx] = { ...ci, notes: e.target.value };
+                                    setFormData({ ...formData, completedItems: newItems });
+                                  }}
+                                  className="checkpoint-note-input"
+                                />
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 );
@@ -1234,16 +1097,16 @@ function getInitialDataForSchema(
 
           {/* 3. TEMPERATURE & COLD CHAIN LOG */}
           {!isDynamicTemplate && template.category === "TEMPERATURE" && (
-            <div className="table-card">
-              <div className="table-header-bar">
+            <div className="checklist-section-card">
+              <div className="checklist-section-header">
                 <div>
-                  <h3>Cold Storage & Display Temperature Monitoring</h3>
-                  <span className="temp-spec-hint">Units: °C (Auto-validates against safe food tolerances)</span>
+                  <h2 className="checklist-section-title">Cold Storage & Refrigeration</h2>
+                  <span className="checklist-section-count">{(formData.readings || []).length} units</span>
                 </div>
-                <div className="quick-action-bar">
+                <div className="checklist-batch-actions">
                   <button
                     type="button"
-                    className="quick-btn-action yes"
+                    className="batch-btn pass"
                     onClick={() => {
                       const updated = (formData.readings || []).map((reading: any) => {
                         const schemaItem = sections
@@ -1265,7 +1128,7 @@ function getInitialDataForSchema(
                   </button>
                   <button
                     type="button"
-                    className="quick-btn-action na"
+                    className="batch-btn na"
                     onClick={() => {
                       const updated = (formData.readings || []).map((reading: any) => ({
                         ...reading,
@@ -1279,97 +1142,89 @@ function getInitialDataForSchema(
                   </button>
                 </div>
               </div>
-              <div className="table-responsive">
-                <table className="audit-table">
-                  <thead>
-                    <tr>
-                      <th>Refrigeration Unit</th>
-                      <th>Target Safe Range</th>
-                      <th>Morning Reading (°C)</th>
-                      <th>Evening Reading (°C)</th>
-                      <th>Alert Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(formData.readings || []).map((reading: any, idx: number) => {
-                      const schemaItem = sections
-                        .flatMap((s: any) => s.items || [])
-                        .find((i: any) => i.id === reading.id || i.name === reading.name);
-                      const min = schemaItem?.targetMinTemp ?? -20;
-                      const max = schemaItem?.targetMaxTemp ?? 10;
-                      const mNum = parseFloat(reading.morningTemp);
-                      const eNum = parseFloat(reading.eveningTemp);
-                      const isBreach =
-                        (!isNaN(mNum) && (mNum < min || mNum > max)) ||
-                        (!isNaN(eNum) && (eNum < min || eNum > max));
 
-                      return (
-                        <tr key={reading.id || idx} className={isBreach ? "row-breach" : ""}>
-                          <td>
-                            <div className="font-semibold">{reading.name}</div>
-                            {reading.machineNumber && (
-                              <span className="machine-tag">Unit #{reading.machineNumber}</span>
-                            )}
-                          </td>
-                          <td>
-                            <span className="safe-range-badge">
-                              {reading.referenceTemp || `${min}°C to ${max}°C`}
+              <div className="checklist-items-stack">
+                {(formData.readings || []).map((reading: any, idx: number) => {
+                  const schemaItem = sections
+                    .flatMap((s: any) => s.items || [])
+                    .find((i: any) => i.id === reading.id || i.name === reading.name);
+                  const min = schemaItem?.targetMinTemp ?? -20;
+                  const max = schemaItem?.targetMaxTemp ?? 10;
+                  const mNum = parseFloat(reading.morningTemp);
+                  const eNum = parseFloat(reading.eveningTemp);
+                  const isBreach =
+                    (!isNaN(mNum) && (mNum < min || mNum > max)) ||
+                    (!isNaN(eNum) && (eNum < min || eNum > max));
+
+                  return (
+                    <div key={reading.id || idx} className={`checkpoint-card ${isBreach ? "card-breach" : ""}`}>
+                      <div className="flex items-center justify-between gap-2 mb-2">
+                        <div>
+                          <span className="checkpoint-name">{reading.name}</span>
+                          {reading.machineNumber && (
+                            <span className="text-[11px] text-slate-400 font-medium ml-1.5">
+                              #{reading.machineNumber}
                             </span>
-                          </td>
-                          <td>
-                            <TouchTempSelect
-                              value={reading.morningTemp}
-                              min={min}
-                              max={max}
-                              onChange={(val) => {
-                                const newReadings = [...(formData.readings || [])];
-                                newReadings[idx] = { ...reading, morningTemp: val };
-                                setFormData({ ...formData, readings: newReadings });
-                              }}
-                            />
-                          </td>
-                          <td>
-                            <TouchTempSelect
-                              value={reading.eveningTemp}
-                              min={min}
-                              max={max}
-                              onChange={(val) => {
-                                const newReadings = [...(formData.readings || [])];
-                                newReadings[idx] = { ...reading, eveningTemp: val };
-                                setFormData({ ...formData, readings: newReadings });
-                              }}
-                            />
-                          </td>
-                          <td>
-                            {isBreach ? (
-                              <span className="breach-tag">⚠️ Breach Out-of-Range</span>
-                            ) : reading.morningTemp || reading.eveningTemp ? (
-                              <span className="optimal-tag">✓ In Spec</span>
-                            ) : (
-                              <span className="pending-tag">Pending</span>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                          )}
+                        </div>
+                        <span className="text-xs font-mono font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded">
+                          {reading.referenceTemp || `${min}°C to ${max}°C`}
+                        </span>
+                      </div>
+
+                      <div className="temp-slots-grid">
+                        <div className="temp-slot">
+                          <span className="temp-slot-label">Morning</span>
+                          <TouchTempSelect
+                            value={reading.morningTemp}
+                            min={min}
+                            max={max}
+                            onChange={(val) => {
+                              const newReadings = [...(formData.readings || [])];
+                              newReadings[idx] = { ...reading, morningTemp: val };
+                              setFormData({ ...formData, readings: newReadings });
+                            }}
+                          />
+                        </div>
+                        <div className="temp-slot">
+                          <span className="temp-slot-label">Evening</span>
+                          <TouchTempSelect
+                            value={reading.eveningTemp}
+                            min={min}
+                            max={max}
+                            onChange={(val) => {
+                              const newReadings = [...(formData.readings || [])];
+                              newReadings[idx] = { ...reading, eveningTemp: val };
+                              setFormData({ ...formData, readings: newReadings });
+                            }}
+                          />
+                        </div>
+                      </div>
+
+                      {isBreach && (
+                        <div className="text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2 mt-2">
+                          ⚠️ Temperature Breach: Out of safe tolerance ({min}°C to {max}°C)
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
 
           {/* 4. SAFETY GLASS / PEST / FACILITY */}
           {!isDynamicTemplate && template.category === "SAFETY_GLASS" && (
-            <div className="table-card">
-              <div className="table-header-bar">
+            <div className="checklist-section-card">
+              <div className="checklist-section-header">
                 <div>
-                  <h3>Glass & Structural Safety Inspection</h3>
-                  <span className="item-count-badge">{(formData.locations || []).length} checkpoints</span>
+                  <h2 className="checklist-section-title">Safety & Structural Inspection</h2>
+                  <span className="checklist-section-count">{(formData.locations || []).length} checkpoints</span>
                 </div>
-                <div className="quick-action-bar">
+                <div className="checklist-batch-actions">
                   <button
                     type="button"
-                    className="quick-btn-action yes"
+                    className="batch-btn pass"
                     onClick={() => {
                       setFormData({
                         ...formData,
@@ -1381,7 +1236,7 @@ function getInitialDataForSchema(
                   </button>
                   <button
                     type="button"
-                    className="quick-btn-action na"
+                    className="batch-btn na"
                     onClick={() => {
                       setFormData({
                         ...formData,
@@ -1391,82 +1246,58 @@ function getInitialDataForSchema(
                   >
                     All N/A
                   </button>
-                  <button
-                    type="button"
-                    className="quick-btn-action no"
-                    onClick={() => {
-                      setFormData({
-                        ...formData,
-                        locations: (formData.locations || []).map((l: any) => ({ ...l, status: "NO" })),
-                      });
-                    }}
-                  >
-                    All Fail
-                  </button>
                 </div>
               </div>
-              <div className="table-responsive">
-                <table className="audit-table">
-                  <thead>
-                    <tr>
-                      <th>Location / Panel</th>
-                      <th>Inspector</th>
-                      <th style={{ width: "220px", textAlign: "center" }}>Condition</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(formData.locations || []).map((loc: any, idx: number) => (
-                      <tr key={loc.id || idx}>
-                        <td>
-                          <span className="font-semibold">{loc.location}</span>
-                        </td>
-                        <td>
-                          <select
-                            value={loc.cleanedBy || ""}
-                            onChange={(e) => {
-                              const newLocs = [...(formData.locations || [])];
-                              newLocs[idx] = { ...loc, cleanedBy: e.target.value };
-                              setFormData({ ...formData, locations: newLocs });
-                            }}
-                            className="table-select"
-                          >
-                            {availableStaff.map((staff) => (
-                              <option key={staff} value={staff}>
-                                {staff}
-                              </option>
-                            ))}
-                          </select>
-                        </td>
-                        <td style={{ textAlign: "center" }}>
-                          <YesNoNaToggle
-                            value={loc.status}
-                            onChange={(val) => {
-                              const newLocs = [...(formData.locations || [])];
-                              newLocs[idx] = { ...loc, status: val };
-                              setFormData({ ...formData, locations: newLocs });
-                            }}
-                          />
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+
+              <div className="checklist-items-stack">
+                {(formData.locations || []).map((loc: any, idx: number) => (
+                  <div key={loc.id || idx} className="checkpoint-card">
+                    <div className="checkpoint-card-top">
+                      <span className="checkpoint-name">{loc.location}</span>
+                      <div className="checkpoint-action-row">
+                        <YesNoNaToggle
+                          value={loc.status}
+                          onChange={(val) => {
+                            const newLocs = [...(formData.locations || [])];
+                            newLocs[idx] = { ...loc, status: val };
+                            setFormData({ ...formData, locations: newLocs });
+                          }}
+                        />
+                      </div>
+                    </div>
+                    {(loc.status === "NO" || loc.notes) && (
+                      <div className="checkpoint-note-box">
+                        <input
+                          type="text"
+                          value={loc.notes || ""}
+                          placeholder="Observation or corrective note..."
+                          onChange={(e) => {
+                            const newLocs = [...(formData.locations || [])];
+                            newLocs[idx] = { ...loc, notes: e.target.value };
+                            setFormData({ ...formData, locations: newLocs });
+                          }}
+                          className="checkpoint-note-input"
+                        />
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
           )}
 
           {/* 5. MONTHLY MAINTENANCE & CUSTOM */}
           {!isDynamicTemplate && (template.category === "MAINTENANCE" || template.category === "CUSTOM") && (
-            <div className="table-card">
-              <div className="table-header-bar">
+            <div className="checklist-section-card">
+              <div className="checklist-section-header">
                 <div>
-                  <h3>Periodic / Maintenance & Custom Tasks</h3>
-                  <span className="item-count-badge">{(formData.tasks || []).length} tasks</span>
+                  <h2 className="checklist-section-title">Periodic & Maintenance Tasks</h2>
+                  <span className="checklist-section-count">{(formData.tasks || []).length} tasks</span>
                 </div>
-                <div className="quick-action-bar">
+                <div className="checklist-batch-actions">
                   <button
                     type="button"
-                    className="quick-btn-action yes"
+                    className="batch-btn pass"
                     onClick={() => {
                       setFormData({
                         ...formData,
@@ -1478,7 +1309,7 @@ function getInitialDataForSchema(
                   </button>
                   <button
                     type="button"
-                    className="quick-btn-action na"
+                    className="batch-btn na"
                     onClick={() => {
                       setFormData({
                         ...formData,
@@ -1488,142 +1319,91 @@ function getInitialDataForSchema(
                   >
                     All N/A
                   </button>
-                  <button
-                    type="button"
-                    className="quick-btn-action no"
-                    onClick={() => {
-                      setFormData({
-                        ...formData,
-                        tasks: (formData.tasks || []).map((t: any) => ({ ...t, status: "NO" })),
-                      });
-                    }}
-                  >
-                    All Fail
-                  </button>
                 </div>
               </div>
-              <div className="table-responsive">
-                <table className="audit-table">
-                  <thead>
-                    <tr>
-                      <th>Maintenance Task</th>
-                      <th>Category</th>
-                      <th>Assigned Specialist / Tech</th>
-                      <th style={{ width: "220px", textAlign: "center" }}>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(formData.tasks || []).map((task: any, idx: number) => (
-                      <tr key={task.id || idx}>
-                        <td>
-                          <span className="font-semibold">{task.task}</span>
-                        </td>
-                        <td>
-                          <span className="category-pill">{task.category}</span>
-                        </td>
-                        <td>
-                          <select
-                            value={task.completedBy || ""}
-                            onChange={(e) => {
-                              const newTasks = [...(formData.tasks || [])];
-                              newTasks[idx] = { ...task, completedBy: e.target.value };
-                              setFormData({ ...formData, tasks: newTasks });
-                            }}
-                            className="table-select"
-                          >
-                            {availableStaff.map((staff) => (
-                              <option key={staff} value={staff}>
-                                {staff}
-                              </option>
-                            ))}
-                          </select>
-                        </td>
-                        <td style={{ textAlign: "center" }}>
-                          <YesNoNaToggle
-                            value={task.status}
-                            onChange={(val) => {
-                              const newTasks = [...(formData.tasks || [])];
-                              newTasks[idx] = { ...task, status: val };
-                              setFormData({ ...formData, tasks: newTasks });
-                            }}
-                          />
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+
+              <div className="checklist-items-stack">
+                {(formData.tasks || []).map((task: any, idx: number) => (
+                  <div key={task.id || idx} className="checkpoint-card">
+                    <div className="checkpoint-card-top">
+                      <div>
+                        <span className="checkpoint-name">{task.task}</span>
+                        {task.category && (
+                          <span className="text-[11px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded ml-2">
+                            {task.category}
+                          </span>
+                        )}
+                      </div>
+                      <div className="checkpoint-action-row">
+                        <YesNoNaToggle
+                          value={task.status}
+                          onChange={(val) => {
+                            const newTasks = [...(formData.tasks || [])];
+                            newTasks[idx] = { ...task, status: val };
+                            setFormData({ ...formData, tasks: newTasks });
+                          }}
+                        />
+                      </div>
+                    </div>
+                    {(task.status === "NO" || task.notes) && (
+                      <div className="checkpoint-note-box">
+                        <input
+                          type="text"
+                          value={task.notes || ""}
+                          placeholder="Observation or corrective note..."
+                          onChange={(e) => {
+                            const newTasks = [...(formData.tasks || [])];
+                            newTasks[idx] = { ...task, notes: e.target.value };
+                            setFormData({ ...formData, tasks: newTasks });
+                          }}
+                          className="checkpoint-note-input"
+                        />
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
           )}
 
-          {/* Supervisor Sign-off & Corrective Action Section */}
-          <div className="audit-footer-grid">
-            <div className="footer-card">
-              <h3>General Notes & Remarks</h3>
+          {/* Minimal Shift Notes & Verification */}
+          <div className="audit-footer-clean">
+            <div className="footer-notes-box">
+              <label className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-1 block">
+                Shift Notes (Optional)
+              </label>
               <textarea
                 value={comments}
                 onChange={(e) => setComments(e.target.value)}
-                placeholder="Add shift observations, hygiene notes or handover remarks..."
-                rows={3}
-                className="footer-textarea"
+                placeholder="Add shift observations or handover remarks..."
+                rows={2}
+                className="footer-textarea-clean"
               />
             </div>
 
-            <div className="footer-card">
-              <h3>Corrective Actions (CAPA)</h3>
-              <textarea
-                value={correctiveAction}
-                onChange={(e) => setCorrectiveAction(e.target.value)}
-                placeholder="Specify any corrective actions taken for failed checks or temperature breaches..."
-                rows={3}
-                className="footer-textarea"
-              />
-            </div>
-
-            <div className="footer-card supervisor-card">
-              <h3>Supervisor Sign-off</h3>
-              <div className="supervisor-inputs">
-                <div className="form-group">
-                  <label>Supervisor Name</label>
-                  <select
-                    value={supervisorName || currentUser.name}
-                    onChange={(e) => setSupervisorName(e.target.value)}
-                    className="control-select"
-                  >
-                    <option value={currentUser.name}>{currentUser.name} (Current User)</option>
-                    {availableStaff
-                      .filter((st) => st !== currentUser.name)
-                      .map((staff) => (
-                        <option key={staff} value={staff}>
-                          {staff}
-                        </option>
-                      ))}
-                  </select>
-                </div>
-
-                <div className="signoff-toggle-row">
-                  <input
-                    type="checkbox"
-                    id="signoff-checkbox"
-                    checked={supervisorSigned}
-                    onChange={(e) => setSupervisorSigned(e.target.checked)}
-                    className="custom-checkbox"
-                  />
-                  <label htmlFor="signoff-checkbox" className="signoff-label">
-                    Digitally sign & verify this audit submission
-                  </label>
-                </div>
-              </div>
+            <div className="footer-signoff-row">
+              <label className="signoff-checkbox-label">
+                <input
+                  type="checkbox"
+                  id="signoff-checkbox"
+                  checked={supervisorSigned}
+                  onChange={(e) => setSupervisorSigned(e.target.checked)}
+                  className="custom-checkbox"
+                />
+                <span className="text-sm font-semibold text-slate-800">
+                  Verified by {supervisorName || currentUser.name}
+                </span>
+              </label>
             </div>
           </div>
 
           {/* Sticky Bottom Save Action Bar */}
           <div className="sticky-action-bar">
             <div className="action-bar-inner">
-              <div className="status-summary">
+              <div className="hidden sm:flex items-center gap-2 text-xs font-medium text-slate-500">
                 <span className="dot-live" />
                 <span>
-                  {existingSubmissionId ? "Editing Saved Submission" : "New Daily Entry"} • {selectedDate}
+                  {existingSubmissionId ? "Saved Record" : "New Entry"} • {selectedDate}
                 </span>
               </div>
               <button
@@ -1632,7 +1412,7 @@ function getInitialDataForSchema(
                 disabled={saving}
                 className="btn-primary-save"
               >
-                {saving ? "Saving..." : existingSubmissionId ? "Update Submission" : "Submit Audit Record"}
+                {saving ? "Saving..." : existingSubmissionId ? "Update Submission" : "Submit Checklist"}
               </button>
             </div>
           </div>

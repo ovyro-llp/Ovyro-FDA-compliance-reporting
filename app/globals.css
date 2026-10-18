@@ -100,10 +100,18 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
 .layout {
   display: flex;
   min-height: 100vh;
+  width: 100%;
+  max-width: 100vw;
+  min-width: 0;
+  overflow-x: hidden;
 }
 
 .main-content {
   flex: 1;
+  min-width: 0;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
   margin-left: var(--sidebar-width);
   padding-top: var(--header-height);
   min-height: 100vh;
@@ -1628,8 +1636,12 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
   /* Offset for mobile topbar and bottom tab bar */
   .main-content {
     margin-left: 0;
+    width: 100%;
+    max-width: 100vw;
+    min-width: 0;
+    overflow-x: hidden;
     padding-top: 60px;
-    padding-bottom: calc(75px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(85px + env(safe-area-inset-bottom, 0px));
     min-height: calc(100vh - 60px);
   }
 
@@ -5013,5 +5025,307 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
     font-size: 0.75rem;
   }
 }
+
+/* ─── MOBILE-FIRST CHECKLIST CARDS & TOUCH CONTROLS ──────────────────────────── */
+
+.dynamic-sheet-container {
+  padding: 1.25rem 1.5rem 7rem 1.5rem;
+  max-width: 900px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.checklist-section-card {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 1.25rem;
+  margin-bottom: 1.25rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  box-sizing: border-box;
+  width: 100%;
+  overflow: hidden;
+}
+
+.checklist-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.checklist-section-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+  line-height: 1.3;
+}
+
+.checklist-section-count {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 0.15rem 0.55rem;
+  border-radius: 99px;
+  display: inline-block;
+  margin-top: 0.25rem;
+}
+
+.checklist-batch-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.batch-btn {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.35rem 0.65rem;
+  border-radius: 8px;
+  border: 1px solid;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.batch-btn.pass {
+  background: #ecfdf5;
+  color: #047857;
+  border-color: #a7f3d0;
+}
+.batch-btn.pass:hover {
+  background: #d1fae5;
+}
+
+.batch-btn.na {
+  background: #f8fafc;
+  color: #475569;
+  border-color: #cbd5e1;
+}
+.batch-btn.na:hover {
+  background: #f1f5f9;
+}
+
+.checklist-items-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  width: 100%;
+}
+
+.checkpoint-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
+  transition: all 0.15s ease;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.checkpoint-card.card-breach {
+  background: #fffbeb;
+  border-color: #fcd34d;
+}
+
+.checkpoint-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.checkpoint-name {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #0f172a;
+  line-height: 1.35;
+  flex: 1;
+  min-width: 140px;
+  word-break: break-word;
+}
+
+.checkpoint-hint {
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-top: 0.2rem;
+}
+
+.checkpoint-action-row {
+  flex-shrink: 0;
+}
+
+.checkpoint-note-box {
+  margin-top: 0.65rem;
+  padding-top: 0.65rem;
+  border-top: 1px dashed #e2e8f0;
+  width: 100%;
+}
+
+.checkpoint-note-input {
+  width: 100%;
+  font-size: 0.82rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #0f172a;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.15s ease;
+}
+
+.checkpoint-note-input:focus {
+  border-color: var(--accent);
+}
+
+.temp-slots-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.65rem;
+  margin-top: 0.5rem;
+  width: 100%;
+}
+
+.temp-slot {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.temp-slot-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748b;
+}
+
+.audit-footer-clean {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 1.25rem;
+  margin-top: 1.25rem;
+  margin-bottom: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.footer-notes-box {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  width: 100%;
+}
+
+.footer-textarea-clean {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 0.65rem 0.85rem;
+  font-size: 0.85rem;
+  outline: none;
+  resize: vertical;
+  min-height: 54px;
+  box-sizing: border-box;
+  color: #0f172a;
+}
+
+.footer-textarea-clean:focus {
+  border-color: var(--accent);
+}
+
+.footer-signoff-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding-top: 0.25rem;
+}
+
+.signoff-checkbox-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Mobile Screens < 640px */
+@media (max-width: 640px) {
+  .dynamic-sheet-container {
+    padding: 0.75rem 0.65rem 6.5rem 0.65rem;
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+
+  .checklist-section-card {
+    padding: 0.95rem 0.75rem;
+    border-radius: 12px;
+    margin-bottom: 0.85rem;
+  }
+
+  .checklist-section-title {
+    font-size: 1rem;
+  }
+
+  .checkpoint-card {
+    padding: 0.75rem;
+    border-radius: 10px;
+  }
+
+  .checkpoint-card-top {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+
+  .checkpoint-name {
+    font-size: 0.88rem;
+    min-width: 0;
+  }
+
+  .checkpoint-action-row {
+    width: 100%;
+  }
+
+  .checkpoint-action-row .touch-btn-toggle {
+    width: 100%;
+  }
+
+  .checkpoint-action-row .touch-btn-option {
+    min-height: 44px;
+    font-size: 0.85rem;
+    flex: 1;
+  }
+
+  .temp-slots-grid {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+
+  .temp-slot select {
+    min-height: 44px;
+    font-size: 15px !important;
+  }
+
+  .audit-footer-clean {
+    padding: 1rem 0.85rem;
+    border-radius: 12px;
+  }
+}
+
 
 
