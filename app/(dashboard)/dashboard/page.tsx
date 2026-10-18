@@ -104,64 +104,43 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   const progressPct = totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0;
 
   return (
-    <div className="dashboard-simple-wrapper">
-      {/* ─── Compact, Focused Header ────────────────────────────────────────── */}
-      <div className="dashboard-simple-header">
-        <div>
-          <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 tracking-wide uppercase">
-            <Calendar size={13} className="text-blue-600" />
-            <span>{formatDate(today)}</span>
-            <span>•</span>
-            <span className="text-slate-700 font-bold">{currentOutlet.name}</span>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-1.5 tracking-tight">
-            Today's Checklists
-          </h1>
-        </div>
-
-        {/* Clean Progress Pill */}
-        <div className="progress-badge-clean">
-          <div className="flex items-center justify-between text-xs font-bold mb-1.5">
-            <span className="text-slate-600">Progress</span>
-            <span className={doneCount === totalCount && totalCount > 0 ? "text-emerald-600" : "text-blue-600"}>
-              {doneCount} of {totalCount} Done
-            </span>
-          </div>
-          <div className="progress-track-clean">
-            <div
-              className={`progress-fill-clean ${doneCount === totalCount && totalCount > 0 ? "bg-emerald-500" : "bg-blue-600"}`}
-              style={{ width: `${progressPct}%` }}
-            />
-          </div>
-        </div>
+    <div className="notion-page-container">
+      {/* ─── Notion Breadcrumb & Header ─────────────────────────────────────── */}
+      <div className="notion-breadcrumb">
+        <span>Workspace</span>
+        <span>/</span>
+        <span>{currentOutlet.name}</span>
+        <span>/</span>
+        <span className="text-slate-900 font-semibold">Checklists</span>
       </div>
 
-      {/* ─── Free Inspection Banner (Minimal & Dismissible/Compact) ──────────── */}
-      {org?.billingStatus !== "PAID" && (
-        <div className="minimal-upgrade-card">
-          <div className="flex items-center gap-2.5">
-            <span className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs">
-              <Sparkles size={16} />
-            </span>
-            <p className="text-xs sm:text-sm font-medium text-slate-700">
-              <strong className="text-slate-900">Preview Mode:</strong> Full checklists available for free inspection.
-            </p>
-          </div>
-          <Link href="/admin/billing" className="minimal-upgrade-btn">
-            Upgrade Plan <ArrowRight size={14} />
-          </Link>
-        </div>
-      )}
+      <div className="notion-page-icon">📋</div>
 
-      {/* ─── Mobile-First Checklists Card List ─────────────────────────────────── */}
-      <div className="checklist-stack">
+      <h1 className="notion-title">Daily Operations & Compliance</h1>
+
+      <div className="notion-meta">
+        <span className="notion-tag blue">{formatDate(today)}</span>
+        <span className="notion-tag">{currentOutlet.name}</span>
+        <span>·</span>
+        <span>{doneCount} of {totalCount} completed</span>
+        {doneCount === totalCount && totalCount > 0 ? (
+          <span className="notion-tag green">✓ All Done</span>
+        ) : null}
+      </div>
+
+      <hr className="notion-hr" />
+
+      {/* ─── Notion List View (Checklists) ─────────────────────────────────── */}
+      <div className="notion-list-stack">
         {outletTemplates.length === 0 ? (
-          <div className="empty-state-card text-center py-12 px-4 bg-white rounded-2xl border border-slate-200">
-            <FileSpreadsheet size={32} className="mx-auto text-slate-400 mb-2" />
-            <p className="text-sm font-semibold text-slate-700">No checklists assigned to {currentOutlet.name}</p>
-            <Link href="/admin/templates" className="text-xs font-bold text-blue-600 mt-2 inline-block hover:underline">
-              Assign Checklists in Admin →
-            </Link>
+          <div className="callout callout-gray">
+            <span className="icon">ℹ️</span>
+            <div>
+              <strong>No checklists configured.</strong> Add or enable templates for {currentOutlet.name} in{" "}
+              <Link href="/admin/templates" className="text-blue-600 underline">
+                Admin Templates
+              </Link>.
+            </div>
           </div>
         ) : (
           outletTemplates.map((ot) => {
@@ -169,47 +148,43 @@ export default async function DashboardPage({ searchParams }: PageProps) {
             const subs = submissionMap.get(tpl.id) || [];
             const isDone = subs.length > 0;
             const latestSub = subs[0];
+            const icon = tpl.icon || "📋";
 
             return (
               <Link
                 key={tpl.id}
                 href={`/${currentOutlet.id}/${tpl.slug}`}
-                className={`sheet-row-card ${isDone ? "status-completed" : "status-pending"}`}
+                className="notion-row-item"
               >
-                <div className="sheet-row-main">
-                  <div className={`sheet-row-icon ${isDone ? "icon-done" : "icon-pending"}`}>
-                    {isDone ? <CheckCircle2 size={22} /> : <FileSpreadsheet size={22} />}
-                  </div>
-
-                  <div className="sheet-row-text">
-                    <div className="flex items-center gap-2">
-                      <h2 className="sheet-row-title">{tpl.title}</h2>
+                <div className="flex items-center gap-3.5 min-w-0">
+                  <span className="notion-row-icon">{icon}</span>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="notion-row-title">{tpl.title}</span>
                       {tpl.frequency === "SHIFT_WISE" && (
-                        <span className="sheet-tag-shift">Shift</span>
+                        <span className="notion-tag">Shift</span>
                       )}
                     </div>
-                    <div className="sheet-row-meta">
+                    <div className="notion-row-sub">
                       {isDone ? (
                         <span className="text-emerald-700 font-medium">
-                          Logged by {latestSub.submittedBy?.name || "Staff"}
+                          ✓ Logged today by {latestSub.submittedBy?.name || "Staff"}
                         </span>
                       ) : (
-                        <span className="text-slate-400 font-normal">
-                          Tap to fill checklist
-                        </span>
+                        <span>Tap to complete inspection</span>
                       )}
                     </div>
                   </div>
                 </div>
 
-                <div className="sheet-row-action">
+                <div className="flex-shrink-0">
                   {isDone ? (
-                    <span className="pill-badge-done">
-                      <CheckCircle2 size={14} /> Completed
+                    <span className="notion-badge-done">
+                      <CheckCircle2 size={13} /> Completed
                     </span>
                   ) : (
-                    <span className="pill-badge-start">
-                      Start <ArrowRight size={14} />
+                    <span className="notion-badge-start">
+                      Start <ArrowRight size={13} />
                     </span>
                   )}
                 </div>

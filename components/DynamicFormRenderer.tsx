@@ -165,68 +165,44 @@ function TouchTempSelect({
   max: number;
   onChange: (val: string) => void;
 }) {
+  const isNa = value === "N/A" || value === "NA";
   const numVal = parseFloat(value || "");
-  const isBreach = !isNaN(numVal) && (numVal < min || numVal > max);
-  const isSelected = value !== undefined && value !== "";
+  const isBreach = !isNa && !isNaN(numVal) && (numVal < min || numVal > max);
+  const isSafe = !isNa && !isNaN(numVal) && numVal >= min && numVal <= max;
 
   return (
-    <div className="temp-touch-box">
-      <select
-        value={value || ""}
-        onChange={(e) => onChange(e.target.value)}
-        className={`touch-temp-select ${
-          isBreach ? "temp-out-of-bounds" : isSelected && value !== "N/A" ? "temp-in-bounds" : ""
+    <div className="flex items-center gap-1.5 w-full">
+      <div
+        className={`relative flex items-center flex-1 rounded-xl border transition-all ${
+          isBreach
+            ? "border-rose-400 bg-rose-50/60"
+            : isSafe
+            ? "border-emerald-400 bg-emerald-50/40"
+            : "border-slate-200 bg-white"
         }`}
       >
-        <option value="">Select Temp (°C)...</option>
-        <option value="N/A">— N/A (Unit Off / Empty)</option>
+        <input
+          type="text"
+          inputMode="decimal"
+          placeholder={isNa ? "N/A" : `${min} to ${max}`}
+          value={isNa ? "" : (value ?? "")}
+          disabled={isNa}
+          onChange={(e) => onChange(e.target.value)}
+          className={`w-full py-2 px-3 text-sm font-bold rounded-xl bg-transparent outline-none transition-colors ${
+            isBreach ? "text-rose-700" : isSafe ? "text-emerald-700" : "text-slate-900"
+          }`}
+        />
+        <span className="pr-2.5 text-xs font-bold text-slate-400 select-none">°C</span>
+      </div>
 
-        <optgroup label="Deep Freezer Range (-25°C to -10°C)">
-          {[
-            "-25.0", "-24.0", "-23.0", "-22.0", "-21.0", "-20.0", "-19.0", "-18.0",
-            "-17.0", "-16.0", "-15.0", "-14.0", "-13.0", "-12.0", "-11.0", "-10.0"
-          ].map((t) => (
-            <option key={t} value={t}>
-              {t}°C {parseFloat(t) >= min && parseFloat(t) <= max ? "✓ (Safe)" : "⚠️"}
-            </option>
-          ))}
-        </optgroup>
-
-        <optgroup label="Chill / Cold Hold (-9°C to 0°C)">
-          {["-9.0", "-8.0", "-7.0", "-6.0", "-5.0", "-4.0", "-3.0", "-2.0", "-1.0", "0.0"].map((t) => (
-            <option key={t} value={t}>
-              {t}°C {parseFloat(t) >= min && parseFloat(t) <= max ? "✓ (Safe)" : "⚠️"}
-            </option>
-          ))}
-        </optgroup>
-
-        <optgroup label="Standard Refrigerator (+0.5°C to +8.0°C)">
-          {[
-            "0.5", "1.0", "1.5", "2.0", "2.5", "3.0", "3.5", "4.0",
-            "4.5", "5.0", "5.5", "6.0", "6.5", "7.0", "7.5", "8.0"
-          ].map((t) => (
-            <option key={t} value={t}>
-              {t}°C {parseFloat(t) >= min && parseFloat(t) <= max ? "✓ (Safe)" : "⚠️"}
-            </option>
-          ))}
-        </optgroup>
-
-        <optgroup label="Display / Ambient (+8.5°C to +30.0°C)">
-          {[
-            "8.5", "9.0", "9.5", "10.0", "11.0", "12.0", "13.0", "14.0",
-            "15.0", "16.0", "18.0", "20.0", "22.0", "25.0", "30.0"
-          ].map((t) => (
-            <option key={t} value={t}>
-              {t}°C {parseFloat(t) >= min && parseFloat(t) <= max ? "✓ (Safe)" : "⚠️"}
-            </option>
-          ))}
-        </optgroup>
-      </select>
       <button
         type="button"
-        className={`na-toggle-btn ${value === "N/A" ? "active" : ""}`}
-        onClick={() => onChange(value === "N/A" ? "" : "N/A")}
-        title="Quick N/A Toggle"
+        onClick={() => onChange(isNa ? "" : "N/A")}
+        className={`px-3 py-2 rounded-xl text-xs font-bold transition-all border ${
+          isNa
+            ? "bg-slate-800 text-white border-slate-800 shadow-sm"
+            : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+        }`}
       >
         N/A
       </button>
@@ -249,28 +225,37 @@ function CleanDirtyNaToggle({
       : "CLEAN";
 
   return (
-    <div className="touch-btn-toggle">
+    <div className="inline-flex p-1 bg-slate-100 rounded-xl gap-1 w-full sm:w-auto border border-slate-200/60">
       <button
         type="button"
         onClick={() => onChange("CLEAN")}
-        className={`touch-btn-option ${current === "CLEAN" ? "active-yes" : ""}`}
-        title="Clean & Sanitized"
+        className={`flex-1 sm:flex-initial px-4 py-2 text-xs font-bold rounded-lg transition-all ${
+          current === "CLEAN"
+            ? "bg-emerald-600 text-white shadow-sm"
+            : "text-slate-600 hover:text-slate-900"
+        }`}
       >
         Clean
       </button>
       <button
         type="button"
         onClick={() => onChange("DIRTY")}
-        className={`touch-btn-option ${current === "DIRTY" ? "active-no" : ""}`}
-        title="Needs Cleaning / Attention"
+        className={`flex-1 sm:flex-initial px-4 py-2 text-xs font-bold rounded-lg transition-all ${
+          current === "DIRTY"
+            ? "bg-rose-600 text-white shadow-sm"
+            : "text-slate-600 hover:text-slate-900"
+        }`}
       >
         Needs Attn
       </button>
       <button
         type="button"
         onClick={() => onChange("NA")}
-        className={`touch-btn-option ${current === "NA" ? "active-na" : ""}`}
-        title="Not Applicable"
+        className={`flex-1 sm:flex-initial px-3 py-2 text-xs font-bold rounded-lg transition-all ${
+          current === "NA"
+            ? "bg-slate-800 text-white shadow-sm"
+            : "text-slate-400 hover:text-slate-700"
+        }`}
       >
         N/A
       </button>
@@ -295,25 +280,37 @@ function YesNoNaToggle({
       : "YES";
 
   return (
-    <div className="touch-btn-toggle">
+    <div className="inline-flex p-1 bg-slate-100 rounded-xl gap-1 w-full sm:w-auto border border-slate-200/60">
       <button
         type="button"
         onClick={() => onChange("YES")}
-        className={`touch-btn-option ${current === "YES" ? "active-yes" : ""}`}
+        className={`flex-1 sm:flex-initial px-4 py-2 text-xs font-bold rounded-lg transition-all ${
+          current === "YES"
+            ? "bg-emerald-600 text-white shadow-sm"
+            : "text-slate-600 hover:text-slate-900"
+        }`}
       >
         Pass
       </button>
       <button
         type="button"
         onClick={() => onChange("NO")}
-        className={`touch-btn-option ${current === "NO" ? "active-no" : ""}`}
+        className={`flex-1 sm:flex-initial px-4 py-2 text-xs font-bold rounded-lg transition-all ${
+          current === "NO"
+            ? "bg-rose-600 text-white shadow-sm"
+            : "text-slate-600 hover:text-slate-900"
+        }`}
       >
         Fail
       </button>
       <button
         type="button"
         onClick={() => onChange("NA")}
-        className={`touch-btn-option ${current === "NA" ? "active-na" : ""}`}
+        className={`flex-1 sm:flex-initial px-3 py-2 text-xs font-bold rounded-lg transition-all ${
+          current === "NA"
+            ? "bg-slate-800 text-white shadow-sm"
+            : "text-slate-400 hover:text-slate-700"
+        }`}
       >
         N/A
       </button>
@@ -645,57 +642,63 @@ function getInitialDataForSchema(
   return (
     <div className="dynamic-sheet-container">
       {/* Clean Minimal Header */}
-      <div className="sheet-header-minimal">
-        <div className="hidden sm:flex items-center justify-between mb-2">
-          <button
-            type="button"
-            onClick={() => router.push("/dashboard")}
-            className="flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors"
-          >
-            ← Dashboard
-          </button>
-          <span className="text-xs font-semibold text-slate-500">
-            {outlet.name}
-          </span>
-        </div>
-
-        <div className="flex items-baseline justify-between gap-3 flex-wrap">
-          <div>
-            <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
-              {template.title}
-            </h1>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="text-xs font-medium bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 shadow-sm"
-            />
-            {availableShifts.length > 1 && (
-              <select
-                value={selectedShift}
-                onChange={(e) => setSelectedShift(e.target.value)}
-                className="text-xs font-medium bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 shadow-sm"
-              >
-                {availableShifts.map((s: string) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
-            )}
-          </div>
-        </div>
+      {/* ─── Notion Document Header & Breadcrumb ───────────────────────────── */}
+      <div className="notion-breadcrumb">
+        <button
+          type="button"
+          onClick={() => router.push("/dashboard")}
+          className="hover:underline cursor-pointer bg-transparent border-none p-0 text-inherit font-inherit"
+        >
+          Workspace
+        </button>
+        <span>/</span>
+        <span>{outlet.name}</span>
+        <span>/</span>
+        <span className="text-slate-900 font-semibold">{template.title}</span>
       </div>
 
-      {/* Notification Toast */}
+      <div className="notion-page-icon">{template.icon || "📋"}</div>
+
+      <h1 className="notion-title">{template.title}</h1>
+
+      <div className="notion-meta">
+        <input
+          type="date"
+          value={selectedDate}
+          onChange={(e) => setSelectedDate(e.target.value)}
+          className="text-xs font-semibold bg-slate-100 border border-slate-200 rounded px-2.5 py-1 text-slate-800"
+        />
+        {availableShifts.length > 1 && (
+          <select
+            value={selectedShift}
+            onChange={(e) => setSelectedShift(e.target.value)}
+            className="text-xs font-semibold bg-slate-100 border border-slate-200 rounded px-2.5 py-1 text-slate-800"
+          >
+            {availableShifts.map((s: string) => (
+              <option key={s} value={s}>
+                {s} Shift
+              </option>
+            ))}
+          </select>
+        )}
+        <span>·</span>
+        <span className={`notion-tag ${complianceScore === 100 ? "green" : "blue"}`}>
+          {complianceScore}% Score
+        </span>
+      </div>
+
+      <hr className="notion-hr" />
+
+      {/* ─── Notion Callout Toast Notification ─────────────────────────────── */}
       {message && (
-        <div className={`notification-toast ${message.type}`}>
-          <span>{message.type === "success" ? "✓" : "⚠️"}</span>
-          <span>{message.text}</span>
-          <button onClick={() => setMessage(null)} className="toast-close">
+        <div className={`callout ${message.type === "success" ? "callout-green" : "callout-red"}`}>
+          <span className="icon">{message.type === "success" ? "✅" : "⚠️"}</span>
+          <div className="flex-1 font-medium">{message.text}</div>
+          <button
+            type="button"
+            onClick={() => setMessage(null)}
+            className="text-xs text-slate-400 hover:text-slate-700 bg-transparent border-none cursor-pointer"
+          >
             ✕
           </button>
         </div>
@@ -909,13 +912,14 @@ function getInitialDataForSchema(
                             </div>
 
                             {(cp.status === "NO" || cp.status === "DIRTY" || isBreach || cp.notes) && (
-                              <div className="checkpoint-note-box">
+                              <div className={`callout ${isBreach || cp.status === "NO" || cp.status === "DIRTY" ? "callout-red" : "callout-yellow"} mt-2`}>
+                                <span className="icon">{isBreach || cp.status === "NO" || cp.status === "DIRTY" ? "🚨" : "📝"}</span>
                                 <input
                                   type="text"
                                   value={cp.notes || ""}
-                                  placeholder="Observation or corrective action..."
+                                  placeholder={isBreach ? "Corrective action for temperature breach..." : "Observation or corrective note..."}
                                   onChange={(e) => updateCp({ notes: e.target.value })}
-                                  className="checkpoint-note-input"
+                                  className="w-full bg-transparent border-none outline-none text-xs font-medium text-slate-800 placeholder:text-slate-400"
                                 />
                               </div>
                             )}
@@ -982,17 +986,18 @@ function getInitialDataForSchema(
                       </div>
                     </div>
                     {(item.status === "NO" || item.notes) && (
-                      <div className="checkpoint-note-box">
+                      <div className={`callout ${item.status === "NO" ? "callout-red" : "callout-yellow"} mt-2`}>
+                        <span className="icon">{item.status === "NO" ? "🚨" : "📝"}</span>
                         <input
                           type="text"
                           value={item.notes || ""}
-                          placeholder="Observation or corrective note..."
+                          placeholder={item.status === "NO" ? "Specify issue or action taken..." : "Observation or corrective note..."}
                           onChange={(e) => {
                             const newItems = [...(formData.items || [])];
                             newItems[idx] = { ...item, notes: e.target.value };
                             setFormData({ ...formData, items: newItems });
                           }}
-                          className="checkpoint-note-input"
+                          className="w-full bg-transparent border-none outline-none text-xs font-medium text-slate-800 placeholder:text-slate-400"
                         />
                       </div>
                     )}
@@ -1071,17 +1076,18 @@ function getInitialDataForSchema(
                               </div>
                             </div>
                             {(ci.status === "NO" || ci.notes) && (
-                              <div className="checkpoint-note-box">
+                              <div className={`callout ${ci.status === "NO" ? "callout-red" : "callout-yellow"} mt-2`}>
+                                <span className="icon">{ci.status === "NO" ? "🚨" : "📝"}</span>
                                 <input
                                   type="text"
                                   value={ci.notes || ""}
-                                  placeholder="Observation or corrective note..."
+                                  placeholder={ci.status === "NO" ? "Specify equipment issue or defect..." : "Observation or corrective note..."}
                                   onChange={(e) => {
                                     const newItems = [...formData.completedItems];
                                     newItems[globalIdx] = { ...ci, notes: e.target.value };
                                     setFormData({ ...formData, completedItems: newItems });
                                   }}
-                                  className="checkpoint-note-input"
+                                  className="w-full bg-transparent border-none outline-none text-xs font-medium text-slate-800 placeholder:text-slate-400"
                                 />
                               </div>
                             )}
@@ -1202,8 +1208,11 @@ function getInitialDataForSchema(
                       </div>
 
                       {isBreach && (
-                        <div className="text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2 mt-2">
-                          ⚠️ Temperature Breach: Out of safe tolerance ({min}°C to {max}°C)
+                        <div className="callout callout-red mt-2">
+                          <span className="icon">🚨</span>
+                          <div className="text-xs font-semibold text-rose-800">
+                            Temperature Breach: Out of safe tolerance ({min}°C to {max}°C)
+                          </div>
                         </div>
                       )}
                     </div>
@@ -1266,17 +1275,18 @@ function getInitialDataForSchema(
                       </div>
                     </div>
                     {(loc.status === "NO" || loc.notes) && (
-                      <div className="checkpoint-note-box">
+                      <div className={`callout ${loc.status === "NO" ? "callout-red" : "callout-yellow"} mt-2`}>
+                        <span className="icon">{loc.status === "NO" ? "🚨" : "📝"}</span>
                         <input
                           type="text"
                           value={loc.notes || ""}
-                          placeholder="Observation or corrective note..."
+                          placeholder={loc.status === "NO" ? "Specify damage, cracks or safety defect..." : "Observation or corrective note..."}
                           onChange={(e) => {
                             const newLocs = [...(formData.locations || [])];
                             newLocs[idx] = { ...loc, notes: e.target.value };
                             setFormData({ ...formData, locations: newLocs });
                           }}
-                          className="checkpoint-note-input"
+                          className="w-full bg-transparent border-none outline-none text-xs font-medium text-slate-800 placeholder:text-slate-400"
                         />
                       </div>
                     )}
@@ -1346,17 +1356,18 @@ function getInitialDataForSchema(
                       </div>
                     </div>
                     {(task.status === "NO" || task.notes) && (
-                      <div className="checkpoint-note-box">
+                      <div className={`callout ${task.status === "NO" ? "callout-red" : "callout-yellow"} mt-2`}>
+                        <span className="icon">{task.status === "NO" ? "🚨" : "📝"}</span>
                         <input
                           type="text"
                           value={task.notes || ""}
-                          placeholder="Observation or corrective note..."
+                          placeholder={task.status === "NO" ? "Observation or maintenance defect..." : "Observation or corrective note..."}
                           onChange={(e) => {
                             const newTasks = [...(formData.tasks || [])];
                             newTasks[idx] = { ...task, notes: e.target.value };
                             setFormData({ ...formData, tasks: newTasks });
                           }}
-                          className="checkpoint-note-input"
+                          className="w-full bg-transparent border-none outline-none text-xs font-medium text-slate-800 placeholder:text-slate-400"
                         />
                       </div>
                     )}
@@ -1367,30 +1378,30 @@ function getInitialDataForSchema(
           )}
 
           {/* Minimal Shift Notes & Verification */}
-          <div className="audit-footer-clean">
+          <div className="notion-card mt-6 p-4">
             <div className="footer-notes-box">
-              <label className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-1 block">
-                Shift Notes (Optional)
+              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1 block">
+                Shift Notes & Handover Remarks (Optional)
               </label>
               <textarea
                 value={comments}
                 onChange={(e) => setComments(e.target.value)}
                 placeholder="Add shift observations or handover remarks..."
                 rows={2}
-                className="footer-textarea-clean"
+                className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-800 outline-none focus:border-slate-400 focus:bg-white transition-all"
               />
             </div>
 
-            <div className="footer-signoff-row">
-              <label className="signoff-checkbox-label">
+            <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between">
+              <label className="flex items-center gap-2 cursor-pointer select-none">
                 <input
                   type="checkbox"
                   id="signoff-checkbox"
                   checked={supervisorSigned}
                   onChange={(e) => setSupervisorSigned(e.target.checked)}
-                  className="custom-checkbox"
+                  className="w-4 h-4 rounded text-slate-900 focus:ring-0 cursor-pointer accent-slate-900"
                 />
-                <span className="text-sm font-semibold text-slate-800">
+                <span className="text-xs font-medium text-slate-700">
                   Verified by {supervisorName || currentUser.name}
                 </span>
               </label>
@@ -1410,7 +1421,7 @@ function getInitialDataForSchema(
                 type="button"
                 onClick={handleSave}
                 disabled={saving}
-                className="btn-primary-save"
+                className="notion-btn-primary w-full sm:w-auto"
               >
                 {saving ? "Saving..." : existingSubmissionId ? "Update Submission" : "Submit Checklist"}
               </button>
