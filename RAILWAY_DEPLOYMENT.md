@@ -15,7 +15,7 @@ This guide explains how to deploy **Reporting Software** as a production-grade m
 ## 2. Deploy from GitHub
 
 1. In Railway, click **+ New** $\rightarrow$ **GitHub Repo**.
-2. Select your repository (`Ovyro-reporting`).
+2. Select your repository: [`ovyro-llp/Ovyro-FDA-compliance-reporting`](https://github.com/ovyro-llp/Ovyro-FDA-compliance-reporting).
 3. Railway will automatically detect Next.js and apply the configuration in [railway.json](file:///Users/hrushi/Downloads/Desktop%20offline/vibe%20coding/Reporting%20software%20/hygiene-app/railway.json).
 
 ---
@@ -26,20 +26,41 @@ In your web service settings under **Variables**, set:
 
 | Variable | Recommended Value | Description |
 | :--- | :--- | :--- |
-| `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` (or Supabase pooled connection string) | Primary database connection |
-| `DIRECT_URL` | Optional: `${{Postgres.DATABASE_URL}}` (or Supabase direct 5432 string) | Direct connection for schema migrations |
+| `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` | Auto-provided when Railway Postgres is provisioned |
 | `AUTH_SECRET` | Generate a 32+ character random secret string | e.g. `openssl rand -base64 32` |
 | `NEXTAUTH_URL` | `https://${{RAILWAY_PUBLIC_DOMAIN}}` | Your Railway public application domain |
 | `NODE_ENV` | `production` | Enables production optimizations |
+| `DODO_PAYMENTS_API_KEY` | Your live Dodo Payments API key | Live API Key from Dodo dashboard |
+| `DODO_PAYMENTS_ENVIRONMENT` | `live_mode` | Mode for Dodo Payments gateway |
+| `DODO_PRODUCT_ID_MONTHLY` | `pdt_0Npwj88UTNHuZ8GdvRcnV` | Monthly Subscription Product ID (₹500/mo) |
+| `DODO_PRODUCT_ID_ANNUAL` | `pdt_0NpwjFgGyqgduafnph03e` | Annual Subscription Product ID (₹5,000/yr) |
+| `DODO_WEBHOOK_KEY` | Your Dodo Webhook Secret | Webhook secret from Dodo dashboard (`whsec_...`) |
 
 ---
 
-## 4. Production Build & Startup Workflow
+## 4. Register Webhook in Dodo Payments Dashboard
 
-The project includes an optimized [railway.json](file:///Users/hrushi/Downloads/Desktop%20offline/vibe%20coding/Reporting%20software%20/hygiene-app/railway.json) configuration:
+Once your Railway service assigns a public domain (`https://xxx.up.railway.app` or your custom domain):
+1. Open the [Dodo Payments Dashboard](https://app.dodopayments.com/).
+2. Navigate to **Developers** $\rightarrow$ **Webhooks** $\rightarrow$ **Add Webhook Endpoint**.
+3. **Endpoint URL**: `https://<your-railway-domain>/api/webhooks/dodo`
+4. **Subscribed Events**:
+   - `subscription.active`
+   - `subscription.renewed`
+   - `subscription.cancelled`
+   - `subscription.failed`
+   - `payment.succeeded`
+   - `payment.failed`
+5. Copy the generated **Webhook Secret** and paste it into Railway as `DODO_WEBHOOK_KEY`.
+
+---
+
+## 5. Production Build & Startup Workflow
+
+The project includes an automated [railway.json](file:///Users/hrushi/Downloads/Desktop%20offline/vibe%20coding/Reporting%20software%20/hygiene-app/railway.json) configuration:
 1. **Build Step (`npx prisma generate && npm run build`)**: Generates Prisma client types and compiles the production Next.js application.
-2. **Deploy Step (`npx prisma db push && npm run db:seed && npm start`)**:
-   - `prisma db push` synchronizes all schema models with PostgreSQL.
+2. **Deploy Step (`npx prisma db push --accept-data-loss && npm run db:seed && npm start`)**:
+   - `prisma db push` synchronizes all schema models directly with PostgreSQL.
    - `db:seed` contains an automated safety guard: it only seeds starter templates and default admin account if the database is brand new. On subsequent restarts or redeploys, it protects and preserves all client data.
    - `npm start` binds to `0.0.0.0` and listens on Railway's dynamic `$PORT`.
 
