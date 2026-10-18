@@ -256,7 +256,7 @@ function CleanDirtyNaToggle({
         className={`touch-btn-option ${current === "CLEAN" ? "active-yes" : ""}`}
         title="Clean & Sanitized"
       >
-        ✓ CLEAN
+        Clean
       </button>
       <button
         type="button"
@@ -264,7 +264,7 @@ function CleanDirtyNaToggle({
         className={`touch-btn-option ${current === "DIRTY" ? "active-no" : ""}`}
         title="Needs Cleaning / Attention"
       >
-        ⚠️ NEEDS ATTN
+        Needs Attn
       </button>
       <button
         type="button"
@@ -272,7 +272,7 @@ function CleanDirtyNaToggle({
         className={`touch-btn-option ${current === "NA" ? "active-na" : ""}`}
         title="Not Applicable"
       >
-        — N/A
+        N/A
       </button>
     </div>
   );
@@ -300,25 +300,22 @@ function YesNoNaToggle({
         type="button"
         onClick={() => onChange("YES")}
         className={`touch-btn-option ${current === "YES" ? "active-yes" : ""}`}
-        title="Yes / Clean / Pass"
       >
-        ✓ YES
+        Pass
       </button>
       <button
         type="button"
         onClick={() => onChange("NO")}
         className={`touch-btn-option ${current === "NO" ? "active-no" : ""}`}
-        title="No / Not Done / Flagged"
       >
-        ✕ NO
+        Fail
       </button>
       <button
         type="button"
         onClick={() => onChange("NA")}
         className={`touch-btn-option ${current === "NA" ? "active-na" : ""}`}
-        title="Not Applicable"
       >
-        — N/A
+        N/A
       </button>
     </div>
   );
@@ -647,78 +644,47 @@ function getInitialDataForSchema(
 
   return (
     <div className="dynamic-sheet-container">
-      {/* Top Header Card */}
-      <div className="sheet-header-card">
-        <div className="sheet-header-left">
-          <div className="sheet-icon-wrapper">
-            <span className="sheet-icon">{template.icon || "📋"}</span>
-          </div>
-          <div>
-            <div className="sheet-badges-row">
-              <span className="badge-outlet">
-                {outlet.icon} {outlet.name}
-              </span>
-              <span className="badge-category">{template.category}</span>
-              <span className="badge-frequency">{template.frequency}</span>
-            </div>
-            <h1 className="sheet-title">{template.title}</h1>
-            {template.description && <p className="sheet-description">{template.description}</p>}
-          </div>
+      {/* Clean Minimal Header */}
+      <div className="sheet-header-minimal">
+        <div className="flex items-center justify-between mb-2">
+          <button
+            type="button"
+            onClick={() => router.push("/dashboard")}
+            className="flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors"
+          >
+            ← Back
+          </button>
+          <span className="text-xs font-semibold text-slate-500">
+            {outlet.name}
+          </span>
         </div>
 
-        {/* Action Controls & Score */}
-        <div className="sheet-header-right">
-          <div className="score-pill-box">
-            <span className="score-label">Compliance Score</span>
-            <span className={`score-value ${complianceScore < 80 ? "warning" : "good"}`}>
-              {complianceScore}%
-            </span>
+        <div className="flex items-baseline justify-between gap-3 flex-wrap">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
+              {template.title}
+            </h1>
           </div>
 
-          <div className="controls-box">
-            <div className="control-item">
-              <label>Audit Date</label>
-              <div className="date-touch-group">
-                <input
-                  type="date"
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                  className="control-input"
-                />
-                <div className="date-quick-pills">
-                  <button
-                    type="button"
-                    className={`pill-btn ${selectedDate === todayStr ? "active" : ""}`}
-                    onClick={() => setSelectedDate(todayStr)}
-                  >
-                    Today
-                  </button>
-                  <button
-                    type="button"
-                    className={`pill-btn ${selectedDate === yesterdayStr ? "active" : ""}`}
-                    onClick={() => setSelectedDate(yesterdayStr)}
-                  >
-                    Yesterday
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {(template.frequency === "SHIFT_WISE" || availableShifts.length > 1) && (
-              <div className="control-item">
-                <label>Operational Shift</label>
-                <select
-                  value={selectedShift}
-                  onChange={(e) => setSelectedShift(e.target.value)}
-                  className="control-select"
-                >
-                  {availableShifts.map((s: string) => (
-                    <option key={s} value={s}>
-                      {s} Shift
-                    </option>
-                  ))}
-                </select>
-              </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="text-xs font-medium bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 shadow-sm"
+            />
+            {availableShifts.length > 1 && (
+              <select
+                value={selectedShift}
+                onChange={(e) => setSelectedShift(e.target.value)}
+                className="text-xs font-medium bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 shadow-sm"
+              >
+                {availableShifts.map((s: string) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
             )}
           </div>
         </div>
@@ -755,7 +721,6 @@ function getInitialDataForSchema(
                         <span className="item-count-badge">{secItems.length} checkpoints</span>
                       </div>
                       <div className="quick-action-bar">
-                        <span className="quick-action-label">Batch Actions:</span>
                         <button
                           type="button"
                           className="quick-btn-action yes"
@@ -783,7 +748,7 @@ function getInitialDataForSchema(
                             setFormData({ ...formData, checkpoints: updatedCheckpoints });
                           }}
                         >
-                          ✓ All Pass / In Spec
+                          All Pass
                         </button>
                         <button
                           type="button"
@@ -804,7 +769,7 @@ function getInitialDataForSchema(
                             setFormData({ ...formData, checkpoints: updatedCheckpoints });
                           }}
                         >
-                          — All N/A
+                          All N/A
                         </button>
                         <button
                           type="button"
@@ -824,7 +789,7 @@ function getInitialDataForSchema(
                             setFormData({ ...formData, checkpoints: updatedCheckpoints });
                           }}
                         >
-                          ✕ All Flag / No
+                          All Fail
                         </button>
                       </div>
                     </div>
@@ -1040,7 +1005,6 @@ function getInitialDataForSchema(
                   <span className="item-count-badge">{(formData.items || []).length} checkpoints</span>
                 </div>
                 <div className="quick-action-bar">
-                  <span className="quick-action-label">Batch Actions:</span>
                   <button
                     type="button"
                     className="quick-btn-action yes"
@@ -1051,7 +1015,7 @@ function getInitialDataForSchema(
                       });
                     }}
                   >
-                    ✓ All YES
+                    All Pass
                   </button>
                   <button
                     type="button"
@@ -1063,7 +1027,7 @@ function getInitialDataForSchema(
                       });
                     }}
                   >
-                    — All N/A
+                    All N/A
                   </button>
                   <button
                     type="button"
@@ -1075,7 +1039,7 @@ function getInitialDataForSchema(
                       });
                     }}
                   >
-                    ✕ All NO
+                    All Fail
                   </button>
                 </div>
               </div>
@@ -1176,7 +1140,7 @@ function getInitialDataForSchema(
                             setFormData({ ...formData, completedItems: updated });
                           }}
                         >
-                          ✓ All YES
+                          All Pass
                         </button>
                         <button
                           type="button"
@@ -1191,7 +1155,7 @@ function getInitialDataForSchema(
                             setFormData({ ...formData, completedItems: updated });
                           }}
                         >
-                          — All N/A
+                          All N/A
                         </button>
                         <button
                           type="button"
@@ -1206,7 +1170,7 @@ function getInitialDataForSchema(
                             setFormData({ ...formData, completedItems: updated });
                           }}
                         >
-                          ✕ All NO
+                          All Fail
                         </button>
                       </div>
                     </div>
@@ -1277,7 +1241,6 @@ function getInitialDataForSchema(
                   <span className="temp-spec-hint">Units: °C (Auto-validates against safe food tolerances)</span>
                 </div>
                 <div className="quick-action-bar">
-                  <span className="quick-action-label">Batch Actions:</span>
                   <button
                     type="button"
                     className="quick-btn-action yes"
@@ -1298,7 +1261,7 @@ function getInitialDataForSchema(
                       setFormData({ ...formData, readings: updated });
                     }}
                   >
-                    ✓ Set All In-Spec Safe
+                    All Safe
                   </button>
                   <button
                     type="button"
@@ -1312,7 +1275,7 @@ function getInitialDataForSchema(
                       setFormData({ ...formData, readings: updated });
                     }}
                   >
-                    — Set All N/A
+                    All N/A
                   </button>
                 </div>
               </div>
@@ -1404,7 +1367,6 @@ function getInitialDataForSchema(
                   <span className="item-count-badge">{(formData.locations || []).length} checkpoints</span>
                 </div>
                 <div className="quick-action-bar">
-                  <span className="quick-action-label">Batch Actions:</span>
                   <button
                     type="button"
                     className="quick-btn-action yes"
@@ -1415,7 +1377,7 @@ function getInitialDataForSchema(
                       });
                     }}
                   >
-                    ✓ All YES
+                    All Pass
                   </button>
                   <button
                     type="button"
@@ -1427,7 +1389,7 @@ function getInitialDataForSchema(
                       });
                     }}
                   >
-                    — All N/A
+                    All N/A
                   </button>
                   <button
                     type="button"
@@ -1439,7 +1401,7 @@ function getInitialDataForSchema(
                       });
                     }}
                   >
-                    ✕ All NO
+                    All Fail
                   </button>
                 </div>
               </div>
@@ -1502,7 +1464,6 @@ function getInitialDataForSchema(
                   <span className="item-count-badge">{(formData.tasks || []).length} tasks</span>
                 </div>
                 <div className="quick-action-bar">
-                  <span className="quick-action-label">Batch Actions:</span>
                   <button
                     type="button"
                     className="quick-btn-action yes"
@@ -1513,7 +1474,7 @@ function getInitialDataForSchema(
                       });
                     }}
                   >
-                    ✓ All YES
+                    All Pass
                   </button>
                   <button
                     type="button"
@@ -1525,7 +1486,7 @@ function getInitialDataForSchema(
                       });
                     }}
                   >
-                    — All N/A
+                    All N/A
                   </button>
                   <button
                     type="button"
@@ -1537,7 +1498,7 @@ function getInitialDataForSchema(
                       });
                     }}
                   >
-                    ✕ All NO
+                    All Fail
                   </button>
                 </div>
               </div>

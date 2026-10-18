@@ -283,17 +283,17 @@ export default function ReportsClient({
       {/* Header */}
       <div className="admin-header-row">
         <div>
-          <h1 className="admin-page-title">Audit Reports & Compliance Pack</h1>
+          <h1 className="admin-page-title">Reports & Exports</h1>
           <p className="admin-page-subtitle">
-            Centralized audit trail across all facilities, shifts, and equipment logs with FSSAI/HACCP export readiness.
+            View inspection records, compliance scores, and download CSV audit trails.
           </p>
         </div>
         <div className="header-actions-group">
           <button onClick={() => window.print()} className="btn-secondary-action">
-            🖨️ Print Audit Pack
+            Print
           </button>
           <button onClick={exportCSV} className="btn-create-primary">
-            📥 Export to CSV / Excel
+            Export CSV
           </button>
         </div>
       </div>
@@ -301,28 +301,24 @@ export default function ReportsClient({
       {/* Summary KPI Cards */}
       <div className="reports-kpi-grid">
         <div className="kpi-card">
-          <span className="kpi-title">Total Submissions</span>
+          <span className="kpi-title">Submissions</span>
           <span className="kpi-value">{filtered.length}</span>
-          <span className="kpi-hint">Records in filtered range</span>
         </div>
         <div className="kpi-card">
-          <span className="kpi-title">Average Compliance</span>
+          <span className="kpi-title">Avg Score</span>
           <span className={`kpi-value ${avgCompliance < 85 ? "warning" : "good"}`}>
             {avgCompliance}%
           </span>
-          <span className="kpi-hint">SOP verification rate</span>
         </div>
         <div className="kpi-card">
-          <span className="kpi-title">Supervisor Verified</span>
+          <span className="kpi-title">Verified</span>
           <span className="kpi-value">
             {filtered.filter((s) => s.supervisorSigned || s.status === "VERIFIED").length}
           </span>
-          <span className="kpi-hint">With digital sign-off</span>
         </div>
         <div className="kpi-card">
-          <span className="kpi-title">Action / CAPA Logs</span>
+          <span className="kpi-title">CAPA Actions</span>
           <span className="kpi-value">{filtered.filter((s) => !!s.correctiveAction).length}</span>
-          <span className="kpi-hint">Recorded corrective actions</span>
         </div>
       </div>
 

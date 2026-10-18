@@ -146,15 +146,9 @@ export default function BillingClient({ organization, products, userRole }: Bill
       {/* Page Header */}
       <div className="admin-header-row">
         <div>
-          <div className="platform-tag" style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem" }}>
-            <span>💳 Subscription & Billing</span>
-            <span style={{ fontSize: "0.7rem", padding: "0.15rem 0.4rem", background: "#ecfdf5", color: "#059669", borderRadius: "4px", fontWeight: "bold" }}>
-              Dodo Payments Verified
-            </span>
-          </div>
-          <h1 className="admin-page-title">SaaS Compliance Plan & Billing</h1>
+          <h1 className="admin-page-title">Billing & Plans</h1>
           <p className="admin-page-subtitle">
-            All billing is securely collected and managed through Dodo Payments (OVYRO FDA & Food Safety Reporting).
+            Manage your subscription, billing interval, and payment status.
           </p>
         </div>
 

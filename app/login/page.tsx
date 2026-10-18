@@ -112,9 +112,11 @@ export default function LoginPage() {
 
       <div className="login-card fade-in">
         <div className="login-logo">
-          <div className="login-logo-icon">📋</div>
-          <h1>Reporting SaaS</h1>
-          <p>Multi-Tenant Audit, Hygiene & SOP Platform</p>
+          <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mx-auto mb-3">
+            <span className="text-2xl font-black">✓</span>
+          </div>
+          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">OVYRO</h1>
+          <p className="text-xs text-slate-500 font-medium mt-1">Daily Operations & Compliance</p>
         </div>
 
         {/* Tab Selector: Sign In vs Create Account */}
@@ -128,7 +130,7 @@ export default function LoginPage() {
               setSuccess("");
             }}
           >
-            🔐 Sign In
+            Sign In
           </button>
           <button
             type="button"
@@ -139,7 +141,7 @@ export default function LoginPage() {
               setSuccess("");
             }}
           >
-            ✨ Create Account
+            Create Account
           </button>
         </div>
 
@@ -179,41 +181,41 @@ export default function LoginPage() {
               className="btn btn-primary login-btn"
               disabled={loading}
             >
-              {loading ? "Signing in..." : "🔐 Sign In to Workspace"}
+              {loading ? "Signing in..." : "Sign In"}
             </button>
           </form>
         )}
 
-        {/* ─── TAB 2: CREATE NEW ACCOUNT (Streamlined: Name, Email, Password) ─ */}
+        {/* ─── TAB 2: CREATE NEW ACCOUNT ─── */}
         {tab === "register" && (
           <form onSubmit={handleRegisterSubmit} className="login-form">
             <div className="form-group">
-              <label htmlFor="reg-name">Your Full Name *</label>
+              <label htmlFor="reg-name">Full Name</label>
               <input
                 id="reg-name"
                 type="text"
                 value={regName}
                 onChange={(e) => setRegName(e.target.value)}
-                placeholder="e.g. Marco Rossi"
+                placeholder="Your name"
                 required
                 autoFocus
               />
             </div>
 
             <div className="form-group">
-              <label htmlFor="reg-email">Work Email Address *</label>
+              <label htmlFor="reg-email">Work Email</label>
               <input
                 id="reg-email"
                 type="email"
                 value={regEmail}
                 onChange={(e) => setRegEmail(e.target.value)}
-                placeholder="marco@kitchen.com"
+                placeholder="name@company.com"
                 required
               />
             </div>
 
             <div className="form-group">
-              <label htmlFor="reg-password">Choose Password *</label>
+              <label htmlFor="reg-password">Password</label>
               <input
                 id="reg-password"
                 type="password"
@@ -225,16 +227,12 @@ export default function LoginPage() {
               />
             </div>
 
-            <p style={{ fontSize: "0.75rem", color: "#64748b", margin: "0.25rem 0 0.75rem 0", lineHeight: 1.4 }}>
-              Next, you&apos;ll configure your facility type &amp; operational risks so we can place your custom compliance templates.
-            </p>
-
             <button
               type="submit"
-              className="btn btn-primary login-btn"
+              className="btn btn-primary login-btn mt-2"
               disabled={loading}
             >
-              {loading ? "Creating Account..." : "✨ Continue to Setup →"}
+              {loading ? "Creating Account..." : "Continue"}
             </button>
           </form>
         )}

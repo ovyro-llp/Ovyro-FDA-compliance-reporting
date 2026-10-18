@@ -325,9 +325,9 @@ export default function UsersClient({
       {/* Header */}
       <div className="admin-header-row">
         <div>
-          <h1 className="admin-page-title">Team Roles & Dynamic Access Control</h1>
+          <h1 className="admin-page-title">Team & Roles</h1>
           <p className="admin-page-subtitle">
-            Configure dynamic employee roles (Supervisor, Manager, Head Chef, Line Worker) and assign granular facility & checklist permissions.
+            Manage team members, roles, and facility access permissions.
           </p>
         </div>
 
@@ -337,14 +337,14 @@ export default function UsersClient({
             className="btn-secondary-action"
           >
             <IconShield />
-            <span>Create Dynamic Role</span>
+            <span>Add Role</span>
           </button>
           <button
             onClick={handleOpenCreateUser}
             className="btn-create-primary"
           >
             <IconPlus />
-            <span>Add Team Member</span>
+            <span>Add Member</span>
           </button>
         </div>
       </div>

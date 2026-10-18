@@ -140,18 +140,18 @@ export default function Sidebar({ user, sheetStatuses = {} }: SidebarProps) {
             onClick={() => setMobileOpen(false)}
           >
             <span className="nav-icon"><LayoutDashboard size={18} /></span>
-            <span className="nav-label">Dashboard Overview</span>
+            <span className="nav-label">Dashboard</span>
           </Link>
 
           {/* Active Outlet Checklists / Sheets */}
           <div className="nav-section-title">
-            <span>{activeOutlet?.name || "Active"} Report Tabs</span>
+            <span>Checklists</span>
           </div>
 
           {loading ? (
-            <div className="sidebar-loading-item">Loading report tabs...</div>
+            <div className="sidebar-loading-item">Loading...</div>
           ) : templates.length === 0 ? (
-            <div className="sidebar-empty-hint">No report tabs assigned</div>
+            <div className="sidebar-empty-hint">No checklists assigned</div>
           ) : (
             templates.map((tpl) => {
               const route = `/${activeOutlet?.id}/${tpl.slug}`;
@@ -174,7 +174,7 @@ export default function Sidebar({ user, sheetStatuses = {} }: SidebarProps) {
           {hasAnyManagementAccess && (
             <>
               <div className="nav-section-title admin-section">
-                <span>Management & Setup</span>
+                <span>Manage</span>
               </div>
 
               {canManageTemplates && (
@@ -184,7 +184,7 @@ export default function Sidebar({ user, sheetStatuses = {} }: SidebarProps) {
                   onClick={() => setMobileOpen(false)}
                 >
                   <span className="nav-icon"><FileCheck2 size={18} /></span>
-                  <span className="nav-label">Report Tabs Builder</span>
+                  <span className="nav-label">Form Templates</span>
                 </Link>
               )}
 
@@ -195,7 +195,7 @@ export default function Sidebar({ user, sheetStatuses = {} }: SidebarProps) {
                   onClick={() => setMobileOpen(false)}
                 >
                   <span className="nav-icon"><Store size={18} /></span>
-                  <span className="nav-label">Outlets & Facilities</span>
+                  <span className="nav-label">Outlets</span>
                 </Link>
               )}
 
@@ -206,7 +206,7 @@ export default function Sidebar({ user, sheetStatuses = {} }: SidebarProps) {
                   onClick={() => setMobileOpen(false)}
                 >
                   <span className="nav-icon"><Users size={18} /></span>
-                  <span className="nav-label">Team & Dynamic Roles</span>
+                  <span className="nav-label">Team & Roles</span>
                 </Link>
               )}
 
@@ -217,7 +217,7 @@ export default function Sidebar({ user, sheetStatuses = {} }: SidebarProps) {
                   onClick={() => setMobileOpen(false)}
                 >
                   <span className="nav-icon"><BarChart3 size={18} /></span>
-                  <span className="nav-label">Audit Reports & Export</span>
+                  <span className="nav-label">Reports & Exports</span>
                 </Link>
               )}
 
@@ -228,7 +228,7 @@ export default function Sidebar({ user, sheetStatuses = {} }: SidebarProps) {
                   onClick={() => setMobileOpen(false)}
                 >
                   <span className="nav-icon"><CreditCard size={18} /></span>
-                  <span className="nav-label">Subscription & Billing</span>
+                  <span className="nav-label">Billing</span>
                 </Link>
               )}
             </>
@@ -238,7 +238,7 @@ export default function Sidebar({ user, sheetStatuses = {} }: SidebarProps) {
           {isPlatformOwner(user) && (
             <>
               <div className="nav-section-title admin-section">
-                <span>SaaS Commercial Center</span>
+                <span>Platform</span>
               </div>
               <Link
                 href="/admin/platform"
@@ -246,7 +246,7 @@ export default function Sidebar({ user, sheetStatuses = {} }: SidebarProps) {
                 onClick={() => setMobileOpen(false)}
               >
                 <span className="nav-icon"><Crown size={18} /></span>
-                <span className="nav-label">Platform & Clients</span>
+                <span className="nav-label">Clients & Billing</span>
               </Link>
             </>
           )}

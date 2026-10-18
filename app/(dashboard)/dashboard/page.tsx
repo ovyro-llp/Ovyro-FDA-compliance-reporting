@@ -6,15 +6,11 @@ import Link from "next/link";
 import { getTodayString, formatDate, resolveOrganizationId } from "@/lib/permissions";
 import {
   CheckCircle2,
-  TrendingUp,
-  ShieldCheck,
-  Building2,
-  Sparkles,
   Clock,
   ArrowRight,
   FileSpreadsheet,
   Calendar,
-  Eye,
+  Sparkles,
 } from "lucide-react";
 
 interface PageProps {
@@ -35,7 +31,6 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   };
 
   const organizationId = await resolveOrganizationId(user);
-
   const resolvedParams = (await searchParams) || {};
   const cookieStore = await cookies();
 
@@ -51,14 +46,15 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     orderBy: { createdAt: "asc" },
   });
 
-
   if (outlets.length === 0) {
     return (
-      <div className="empty-state-card">
-        <h2>No facilities configured</h2>
-        <p>Please add a facility or outlet from the Admin Console.</p>
-        <Link href="/admin/outlets" className="btn-create-primary">
-          Configure Outlets
+      <div className="empty-state-card text-center py-16 px-6">
+        <h2 className="text-xl font-bold text-slate-800">No Facilities Configured</h2>
+        <p className="text-slate-500 text-sm mt-2 max-w-sm mx-auto">
+          Add your first outlet or kitchen to begin daily compliance logging.
+        </p>
+        <Link href="/admin/outlets" className="btn-primary mt-6 inline-flex">
+          Add Facility
         </Link>
       </div>
     );
@@ -103,249 +99,124 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     submissionMap.set(sub.templateId, arr);
   });
 
-  const totalTemplates = outletTemplates.length;
-  const completedCount = outletTemplates.filter((ot) => submissionMap.has(ot.templateId)).length;
-  const completionPercentage = totalTemplates > 0 ? Math.round((completedCount / totalTemplates) * 100) : 100;
-
-  // Recent 10 submissions across all outlets for this tenant
-  const recentFeed = await prisma.formSubmission.findMany({
-    where: { organizationId },
-    take: 8,
-    orderBy: { createdAt: "desc" },
-    include: {
-      submittedBy: { select: { name: true } },
-      template: { select: { title: true, icon: true } },
-      outlet: { select: { name: true, icon: true } },
-    },
-  });
-
+  const totalCount = outletTemplates.length;
+  const doneCount = outletTemplates.filter((ot) => submissionMap.has(ot.templateId)).length;
+  const progressPct = totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0;
 
   return (
-    <div className="dashboard-container">
-      {/* Welcome Banner */}
-      <div className="dashboard-hero-banner">
-        <div className="hero-left">
-          <span className="hero-date-badge flex items-center gap-1.5">
-            <Calendar size={14} className="text-blue-600" /> {formatDate(today)}
-          </span>
-          <h1 className="hero-title">
-            Welcome back, {user.name || "Operator"}!
+    <div className="dashboard-simple-wrapper">
+      {/* ─── Compact, Focused Header ────────────────────────────────────────── */}
+      <div className="dashboard-simple-header">
+        <div>
+          <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 tracking-wide uppercase">
+            <Calendar size={13} className="text-blue-600" />
+            <span>{formatDate(today)}</span>
+            <span>•</span>
+            <span className="text-slate-700 font-bold">{currentOutlet.name}</span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-1.5 tracking-tight">
+            Today's Checklists
           </h1>
-          <p className="hero-subtitle">
-            {user.organizationName || "Audit Management"} • Daily Operations & Food Safety Compliance
-          </p>
         </div>
 
-        <div className="hero-right">
-          <div className="outlet-pill-badge">
-            <span className="pill-icon flex items-center justify-center text-blue-600">
-              <Building2 size={16} />
+        {/* Clean Progress Pill */}
+        <div className="progress-badge-clean">
+          <div className="flex items-center justify-between text-xs font-bold mb-1.5">
+            <span className="text-slate-600">Progress</span>
+            <span className={doneCount === totalCount && totalCount > 0 ? "text-emerald-600" : "text-blue-600"}>
+              {doneCount} of {totalCount} Done
             </span>
-            <div className="pill-details">
-              <span className="pill-title">{currentOutlet.name}</span>
-              <span className="pill-type">{currentOutlet.type}</span>
-            </div>
+          </div>
+          <div className="progress-track-clean">
+            <div
+              className={`progress-fill-clean ${doneCount === totalCount && totalCount > 0 ? "bg-emerald-500" : "bg-blue-600"}`}
+              style={{ width: `${progressPct}%` }}
+            />
           </div>
         </div>
       </div>
 
-      {/* Free Inspection Mode / Upgrade Banner */}
+      {/* ─── Free Inspection Banner (Minimal & Dismissible/Compact) ──────────── */}
       {org?.billingStatus !== "PAID" && (
-        <div style={{
-          background: "#ffffff",
-          border: "1px solid #bfdbfe",
-          borderRadius: "16px",
-          padding: "1.1rem 1.35rem",
-          marginBottom: "1.5rem",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          flexWrap: "wrap",
-          gap: "1rem",
-          boxShadow: "0 4px 12px rgba(37, 99, 235, 0.06)",
-        }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.85rem" }}>
-            <div style={{
-              width: "40px",
-              height: "40px",
-              borderRadius: "10px",
-              background: "#eff6ff",
-              color: "#2563eb",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}>
-              <Eye size={20} />
-            </div>
-            <div>
-              <div style={{ fontWeight: 700, fontSize: "0.95rem", color: "#1e3a8a" }}>
-                Free Inspection Mode Active
-              </div>
-              <div style={{ fontSize: "0.825rem", color: "#475569", marginTop: "0.15rem" }}>
-                All bespoke compliance SOPs are placed and ready for inspection. Subscribe to unlock shift logging, reports, and team management.
-              </div>
-            </div>
+        <div className="minimal-upgrade-card">
+          <div className="flex items-center gap-2.5">
+            <span className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs">
+              <Sparkles size={16} />
+            </span>
+            <p className="text-xs sm:text-sm font-medium text-slate-700">
+              <strong className="text-slate-900">Preview Mode:</strong> Full checklists available for free inspection.
+            </p>
           </div>
-          <Link
-            href="/admin/billing"
-            style={{
-              background: "#2563eb",
-              color: "#ffffff",
-              padding: "0.6rem 1.25rem",
-              borderRadius: "10px",
-              fontWeight: 600,
-              fontSize: "0.875rem",
-              textDecoration: "none",
-              boxShadow: "0 2px 8px rgba(37, 99, 235, 0.25)",
-              display: "flex",
-              alignItems: "center",
-              gap: "0.4rem",
-              whiteSpace: "nowrap",
-            }}
-          >
-            Activate Subscription (₹500/mo) <ArrowRight size={15} />
+          <Link href="/admin/billing" className="minimal-upgrade-btn">
+            Upgrade Plan <ArrowRight size={14} />
           </Link>
         </div>
       )}
 
-      {/* KPI Stats Row (Bento Grid) */}
-      <div className="dashboard-kpi-grid">
-        <div className="kpi-box">
-          <div className="kpi-icon-wrap green">
-            <CheckCircle2 size={20} />
+      {/* ─── Mobile-First Checklists Card List ─────────────────────────────────── */}
+      <div className="checklist-stack">
+        {outletTemplates.length === 0 ? (
+          <div className="empty-state-card text-center py-12 px-4 bg-white rounded-2xl border border-slate-200">
+            <FileSpreadsheet size={32} className="mx-auto text-slate-400 mb-2" />
+            <p className="text-sm font-semibold text-slate-700">No checklists assigned to {currentOutlet.name}</p>
+            <Link href="/admin/templates" className="text-xs font-bold text-blue-600 mt-2 inline-block hover:underline">
+              Assign Checklists in Admin →
+            </Link>
           </div>
-          <div>
-            <span className="kpi-num">{completedCount}/{totalTemplates}</span>
-            <span className="kpi-label">Today's Checklists Done</span>
-          </div>
-        </div>
+        ) : (
+          outletTemplates.map((ot) => {
+            const tpl = ot.template;
+            const subs = submissionMap.get(tpl.id) || [];
+            const isDone = subs.length > 0;
+            const latestSub = subs[0];
 
-        <div className="kpi-box">
-          <div className="kpi-icon-wrap blue">
-            <TrendingUp size={20} />
-          </div>
-          <div>
-            <span className="kpi-num">{completionPercentage}%</span>
-            <span className="kpi-label">Facility Completion Rate</span>
-          </div>
-        </div>
+            return (
+              <Link
+                key={tpl.id}
+                href={`/${currentOutlet.id}/${tpl.slug}`}
+                className={`sheet-row-card ${isDone ? "status-completed" : "status-pending"}`}
+              >
+                <div className="sheet-row-main">
+                  <div className={`sheet-row-icon ${isDone ? "icon-done" : "icon-pending"}`}>
+                    {isDone ? <CheckCircle2 size={22} /> : <FileSpreadsheet size={22} />}
+                  </div>
 
-        <div className="kpi-box">
-          <div className="kpi-icon-wrap amber">
-            <ShieldCheck size={20} />
-          </div>
-          <div>
-            <span className="kpi-num">
-              {todaySubsubmissions.filter((s) => s.status === "VERIFIED" || s.supervisorSigned).length}
-            </span>
-            <span className="kpi-label">Supervisor Verified</span>
-          </div>
-        </div>
-
-        <div className="kpi-box">
-          <div className="kpi-icon-wrap purple">
-            <Building2 size={20} />
-          </div>
-          <div>
-            <span className="kpi-num">{outlets.length}</span>
-            <span className="kpi-label">Active Facilities</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content Grid: Checklists + Recent Activity */}
-      <div className="dashboard-grid-layout">
-        {/* Left: Active Checklists for the Selected Outlet */}
-        <div className="dashboard-left-col">
-          <div className="section-title-bar">
-            <h2>Today's Report Tabs & SOPs</h2>
-            <span className="sub-hint">Click any report tab to record or update today's logs</span>
-          </div>
-
-          <div className="checklists-cards-grid">
-            {outletTemplates.length === 0 ? (
-              <div className="empty-card">
-                <p>No report tabs assigned to {currentOutlet.name}.</p>
-                <Link href="/admin/templates" className="btn-secondary-link">
-                  Manage Report Tabs in Admin Console
-                </Link>
-              </div>
-            ) : (
-              outletTemplates.map((ot) => {
-                const tpl = ot.template;
-                const subs = submissionMap.get(tpl.id) || [];
-                const isDone = subs.length > 0;
-                const latestSub = subs[0];
-
-                return (
-                  <Link
-                    key={tpl.id}
-                    href={`/${currentOutlet.id}/${tpl.slug}`}
-                    className={`checklist-card ${isDone ? "is-done" : "is-pending"}`}
-                  >
-                    <div className="checklist-card-top">
-                      <div className="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-semibold">
-                        <FileSpreadsheet size={18} />
-                      </div>
-                      <span className={`status-tag ${isDone ? "done" : "pending"}`}>
-                        {isDone ? (
-                          <span className="flex items-center gap-1"><CheckCircle2 size={13} /> Completed</span>
-                        ) : (
-                          <span className="flex items-center gap-1"><Clock size={13} /> Pending</span>
-                        )}
-                      </span>
-                    </div>
-
-                    <h3 className="card-title">{tpl.title}</h3>
-                    <p className="card-desc">
-                      {tpl.description || `${tpl.frequency} inspection checklist`}
-                    </p>
-
-                    <div className="card-footer-meta">
-                      {isDone ? (
-                        <span>
-                          By {latestSub.submittedBy?.name || "Staff"} • {latestSub.complianceScore ?? 100}% Score
-                        </span>
-                      ) : (
-                        <span>Due today • Tap to record</span>
+                  <div className="sheet-row-text">
+                    <div className="flex items-center gap-2">
+                      <h2 className="sheet-row-title">{tpl.title}</h2>
+                      {tpl.frequency === "SHIFT_WISE" && (
+                        <span className="sheet-tag-shift">Shift</span>
                       )}
                     </div>
-                  </Link>
-                );
-              })
-            )}
-          </div>
-        </div>
-
-        {/* Right: Live Activity Stream */}
-        <div className="dashboard-right-col">
-          <div className="section-title-bar">
-            <h2>Live Audit Stream</h2>
-          </div>
-
-          <div className="activity-stream-card">
-            {recentFeed.length === 0 ? (
-              <p className="no-activity-text">No recent submissions recorded yet.</p>
-            ) : (
-              recentFeed.map((entry) => (
-                <div key={entry.id} className="stream-item">
-                  <div className="stream-icon flex items-center justify-center text-slate-600">
-                    <FileSpreadsheet size={16} />
+                    <div className="sheet-row-meta">
+                      {isDone ? (
+                        <span className="text-emerald-700 font-medium">
+                          Logged by {latestSub.submittedBy?.name || "Staff"}
+                        </span>
+                      ) : (
+                        <span className="text-slate-400 font-normal">
+                          Tap to fill checklist
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <div className="stream-info">
-                    <span className="stream-title">
-                      {entry.template?.title} ({entry.outlet?.name})
-                    </span>
-                    <span className="stream-by">
-                      Logged by {entry.submittedBy?.name || "Staff"} • {entry.complianceScore ?? 100}% Score
-                    </span>
-                  </div>
-                  <span className="stream-date">{entry.date}</span>
                 </div>
-              ))
-            )}
-          </div>
-        </div>
+
+                <div className="sheet-row-action">
+                  {isDone ? (
+                    <span className="pill-badge-done">
+                      <CheckCircle2 size={14} /> Completed
+                    </span>
+                  ) : (
+                    <span className="pill-badge-start">
+                      Start <ArrowRight size={14} />
+                    </span>
+                  )}
+                </div>
+              </Link>
+            );
+          })
+        )}
       </div>
     </div>
   );

@@ -823,9 +823,9 @@ export default function TemplateManagerClient({
       {/* Header */}
       <div className="admin-header-row">
         <div>
-          <h1 className="admin-page-title">Report Tabs</h1>
+          <h1 className="admin-page-title">Form Templates</h1>
           <p className="admin-page-subtitle">
-            Configure custom Report Tabs (checklists, equipment logs, temperature logs, hygiene SOPs) assigned across your outlets.
+            Create and assign checklists, temperature logs, and inspection sheets.
           </p>
         </div>
         <button onClick={handleOpenCreate} className="btn-create-primary">

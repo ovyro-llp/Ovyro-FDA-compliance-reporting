@@ -195,13 +195,13 @@ export default function OutletManagerClient({
 
       <div className="admin-header-row">
         <div>
-          <h1 className="admin-page-title">Facilities & Outlets</h1>
+          <h1 className="admin-page-title">Outlets & Facilities</h1>
           <p className="admin-page-subtitle">
-            Manage your physical locations, kitchens, retail stores, custom operational shifts, and checklist assignments.
+            Manage locations, operational shifts, and form assignments.
           </p>
         </div>
         <button onClick={handleOpenCreate} className="btn-create-primary">
-          <span>➕</span> Add New Outlet / Facility
+          Add Facility
         </button>
       </div>
 
