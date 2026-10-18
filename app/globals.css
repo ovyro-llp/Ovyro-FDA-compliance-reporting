@@ -1747,14 +1747,20 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
     z-index: 2000 !important;
     align-items: flex-end !important;
     padding: 0 !important;
+    overflow-x: hidden !important;
+    touch-action: pan-y;
   }
 
   .modal-card {
     max-width: 100% !important;
     width: 100% !important;
-    max-height: 88vh !important;
+    max-height: 90vh !important;
     border-radius: 20px 20px 0 0 !important;
-    padding: 1.25rem 1rem 2rem 1rem !important;
+    padding: 0 !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
     animation: slideUpBottom 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
   }
 
@@ -6685,6 +6691,8 @@ body:has(.notion-submit-bar) .mobile-bottom-nav {
   z-index: 2500;
   padding: 16px;
   box-sizing: border-box;
+  overflow-x: hidden !important;
+  touch-action: pan-y;
 }
 
 .modal-card {
@@ -6695,9 +6703,12 @@ body:has(.notion-submit-bar) .mobile-bottom-nav {
   max-width: 600px;
   max-height: 88vh;
   overflow-y: auto;
+  overflow-x: hidden !important;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
   box-sizing: border-box;
-  padding: 0;
+  padding: 0 !important;
 }
 
 .notion-modal-header {
@@ -6710,16 +6721,20 @@ body:has(.notion-submit-bar) .mobile-bottom-nav {
   top: 0;
   background: #FFFFFF;
   z-index: 10;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .notion-modal-title-row {
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
 }
 
 .notion-modal-icon {
   font-size: 20px;
+  flex-shrink: 0;
 }
 
 .notion-modal-title {
@@ -6727,6 +6742,9 @@ body:has(.notion-submit-bar) .mobile-bottom-nav {
   font-weight: 650;
   color: #2C2C2B;
   margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .notion-modal-close-btn {
@@ -6737,6 +6755,7 @@ body:has(.notion-submit-bar) .mobile-bottom-nav {
   cursor: pointer;
   padding: 4px 8px;
   border-radius: 4px;
+  flex-shrink: 0;
 }
 
 .notion-modal-close-btn:hover {
@@ -6746,18 +6765,33 @@ body:has(.notion-submit-bar) .mobile-bottom-nav {
 
 .notion-modal-body {
   padding: 20px 22px;
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .notion-form-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 14px;
   margin-bottom: 14px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-@media (max-width: 580px) {
+@media (max-width: 640px) {
+  .notion-modal-body {
+    padding: 14px 16px;
+  }
+  .notion-modal-header {
+    padding: 14px 16px;
+  }
+  .notion-modal-footer {
+    padding: 12px 16px !important;
+  }
   .notion-form-row {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 10px;
   }
 }
@@ -6767,6 +6801,9 @@ body:has(.notion-submit-bar) .mobile-bottom-nav {
   flex-direction: column;
   gap: 5px;
   margin-bottom: 14px;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .notion-form-label {
@@ -6780,6 +6817,8 @@ body:has(.notion-submit-bar) .mobile-bottom-nav {
 .notion-input,
 .notion-select {
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
   background: #F7F6F3;
   border: 1px solid #E6E5E3;
   border-radius: 6px;
@@ -6803,10 +6842,13 @@ body:has(.notion-submit-bar) .mobile-bottom-nav {
   align-items: center;
   gap: 8px;
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .notion-icon-input {
-  width: 54px !important;
+  width: 50px !important;
   text-align: center;
   font-size: 18px;
   padding: 5px !important;
@@ -6817,8 +6859,12 @@ body:has(.notion-submit-bar) .mobile-bottom-nav {
   display: flex;
   gap: 4px;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   padding-bottom: 4px;
   flex: 1;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
   white-space: nowrap;
 }
 
@@ -6851,6 +6897,8 @@ body:has(.notion-submit-bar) .mobile-bottom-nav {
   font-size: 12px;
   font-weight: 500;
   color: #2C2C2B;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .notion-shift-remove-btn {
@@ -6861,6 +6909,7 @@ body:has(.notion-submit-bar) .mobile-bottom-nav {
   padding: 0 2px;
   font-size: 12px;
   line-height: 1;
+  flex-shrink: 0;
 }
 
 .notion-shift-remove-btn:hover {
@@ -6871,12 +6920,13 @@ body:has(.notion-submit-bar) .mobile-bottom-nav {
   background: #F7F6F3;
   border: 1px solid #E6E5E3;
   border-radius: 4px;
-  padding: 2px 7px;
-  font-size: 11px;
+  padding: 3px 8px;
+  font-size: 11.5px;
   font-weight: 500;
   color: #5A5751;
   cursor: pointer;
   transition: all 0.1s ease;
+  white-space: nowrap;
 }
 
 .notion-preset-pill:hover {
@@ -6886,14 +6936,16 @@ body:has(.notion-submit-bar) .mobile-bottom-nav {
 
 .notion-template-checkbox-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 8px;
   margin-top: 6px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-@media (max-width: 580px) {
+@media (max-width: 640px) {
   .notion-template-checkbox-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -6910,6 +6962,17 @@ body:has(.notion-submit-bar) .mobile-bottom-nav {
   cursor: pointer;
   user-select: none;
   transition: all 0.12s ease;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.notion-template-checkbox-item span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 
 .notion-template-checkbox-item.checked {
@@ -6927,4 +6990,6 @@ body:has(.notion-submit-bar) .mobile-bottom-nav {
   border-top: 1px solid #F1F1EF;
   background: #FAF9F6;
   border-radius: 0 0 12px 12px;
+  width: 100%;
+  box-sizing: border-box;
 }

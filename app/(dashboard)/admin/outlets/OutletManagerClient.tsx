@@ -24,6 +24,17 @@ export default function OutletManagerClient({
   const [error, setError] = useState<string | null>(null);
   const [successToast, setSuccessToast] = useState<string | null>(null);
 
+  React.useEffect(() => {
+    if (isModalOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isModalOpen]);
+
   // Form state
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
@@ -454,7 +465,7 @@ export default function OutletManagerClient({
                   </div>
 
                   {/* Add Custom Shift */}
-                  <div style={{ display: "flex", gap: "8px" }}>
+                  <div style={{ display: "flex", gap: "8px", width: "100%", maxWidth: "100%", boxSizing: "border-box" }}>
                     <input
                       type="text"
                       value={customShiftInput}
@@ -465,15 +476,15 @@ export default function OutletManagerClient({
                           handleAddShift();
                         }
                       }}
-                      placeholder="Add custom shift (e.g. Night Prep, Late Cleaning) & press Add"
+                      placeholder="Add custom shift & press Add"
                       className="notion-input"
-                      style={{ flex: 1, fontSize: "12.5px" }}
+                      style={{ flex: 1, minWidth: 0, fontSize: "12.5px" }}
                     />
                     <button
                       type="button"
                       onClick={handleAddShift}
                       className="notion-preset-pill"
-                      style={{ padding: "6px 12px", fontWeight: 600 }}
+                      style={{ padding: "6px 12px", fontWeight: 600, flexShrink: 0 }}
                     >
                       + Add Shift
                     </button>
