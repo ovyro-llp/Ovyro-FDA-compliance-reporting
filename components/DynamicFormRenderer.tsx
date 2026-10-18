@@ -171,16 +171,8 @@ function TouchTempSelect({
   const isSafe = !isNa && !isNaN(numVal) && numVal >= min && numVal <= max;
 
   return (
-    <div className="flex items-center gap-1.5 w-full">
-      <div
-        className={`relative flex items-center flex-1 rounded-xl border transition-all ${
-          isBreach
-            ? "border-rose-400 bg-rose-50/60"
-            : isSafe
-            ? "border-emerald-400 bg-emerald-50/40"
-            : "border-slate-200 bg-white"
-        }`}
-      >
+    <div className="notion-temp-wrap">
+      <div className={`notion-temp-box ${isBreach ? "breach" : isSafe ? "safe" : ""}`}>
         <input
           type="text"
           inputMode="decimal"
@@ -188,21 +180,15 @@ function TouchTempSelect({
           value={isNa ? "" : (value ?? "")}
           disabled={isNa}
           onChange={(e) => onChange(e.target.value)}
-          className={`w-full py-2 px-3 text-sm font-bold rounded-xl bg-transparent outline-none transition-colors ${
-            isBreach ? "text-rose-700" : isSafe ? "text-emerald-700" : "text-slate-900"
-          }`}
+          className="notion-temp-input"
         />
-        <span className="pr-2.5 text-xs font-bold text-slate-400 select-none">°C</span>
+        <span className="notion-temp-unit">°C</span>
       </div>
 
       <button
         type="button"
         onClick={() => onChange(isNa ? "" : "N/A")}
-        className={`px-3 py-2 rounded-xl text-xs font-bold transition-all border ${
-          isNa
-            ? "bg-slate-800 text-white border-slate-800 shadow-sm"
-            : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
-        }`}
+        className={`notion-temp-na-btn ${isNa ? "active" : ""}`}
       >
         N/A
       </button>
@@ -225,37 +211,25 @@ function CleanDirtyNaToggle({
       : "CLEAN";
 
   return (
-    <div className="inline-flex p-1 bg-slate-100 rounded-xl gap-1 w-full sm:w-auto border border-slate-200/60">
+    <div className="notion-toggle-group">
       <button
         type="button"
         onClick={() => onChange("CLEAN")}
-        className={`flex-1 sm:flex-initial px-4 py-2 text-xs font-bold rounded-lg transition-all ${
-          current === "CLEAN"
-            ? "bg-emerald-600 text-white shadow-sm"
-            : "text-slate-600 hover:text-slate-900"
-        }`}
+        className={`notion-toggle-btn ${current === "CLEAN" ? "active-pass" : ""}`}
       >
         Clean
       </button>
       <button
         type="button"
         onClick={() => onChange("DIRTY")}
-        className={`flex-1 sm:flex-initial px-4 py-2 text-xs font-bold rounded-lg transition-all ${
-          current === "DIRTY"
-            ? "bg-rose-600 text-white shadow-sm"
-            : "text-slate-600 hover:text-slate-900"
-        }`}
+        className={`notion-toggle-btn ${current === "DIRTY" ? "active-fail" : ""}`}
       >
         Needs Attn
       </button>
       <button
         type="button"
         onClick={() => onChange("NA")}
-        className={`flex-1 sm:flex-initial px-3 py-2 text-xs font-bold rounded-lg transition-all ${
-          current === "NA"
-            ? "bg-slate-800 text-white shadow-sm"
-            : "text-slate-400 hover:text-slate-700"
-        }`}
+        className={`notion-toggle-btn ${current === "NA" ? "active-na" : ""}`}
       >
         N/A
       </button>
@@ -280,37 +254,25 @@ function YesNoNaToggle({
       : "YES";
 
   return (
-    <div className="inline-flex p-1 bg-slate-100 rounded-xl gap-1 w-full sm:w-auto border border-slate-200/60">
+    <div className="notion-toggle-group">
       <button
         type="button"
         onClick={() => onChange("YES")}
-        className={`flex-1 sm:flex-initial px-4 py-2 text-xs font-bold rounded-lg transition-all ${
-          current === "YES"
-            ? "bg-emerald-600 text-white shadow-sm"
-            : "text-slate-600 hover:text-slate-900"
-        }`}
+        className={`notion-toggle-btn ${current === "YES" ? "active-pass" : ""}`}
       >
         Pass
       </button>
       <button
         type="button"
         onClick={() => onChange("NO")}
-        className={`flex-1 sm:flex-initial px-4 py-2 text-xs font-bold rounded-lg transition-all ${
-          current === "NO"
-            ? "bg-rose-600 text-white shadow-sm"
-            : "text-slate-600 hover:text-slate-900"
-        }`}
+        className={`notion-toggle-btn ${current === "NO" ? "active-fail" : ""}`}
       >
         Fail
       </button>
       <button
         type="button"
         onClick={() => onChange("NA")}
-        className={`flex-1 sm:flex-initial px-3 py-2 text-xs font-bold rounded-lg transition-all ${
-          current === "NA"
-            ? "bg-slate-800 text-white shadow-sm"
-            : "text-slate-400 hover:text-slate-700"
-        }`}
+        className={`notion-toggle-btn ${current === "NA" ? "active-na" : ""}`}
       >
         N/A
       </button>
@@ -641,63 +603,61 @@ function getInitialDataForSchema(
 
   return (
     <div className="dynamic-sheet-container">
-      {/* Clean Minimal Header */}
       {/* ─── Notion Document Header & Breadcrumb ───────────────────────────── */}
-      <div className="notion-breadcrumb">
-        <button
-          type="button"
-          onClick={() => router.push("/dashboard")}
-          className="hover:underline cursor-pointer bg-transparent border-none p-0 text-inherit font-inherit"
-        >
-          Workspace
-        </button>
-        <span>/</span>
-        <span>{outlet.name}</span>
-        <span>/</span>
-        <span className="text-slate-900 font-semibold">{template.title}</span>
-      </div>
-
-      <div className="notion-page-icon">{template.icon || "📋"}</div>
-
-      <h1 className="notion-title">{template.title}</h1>
-
-      <div className="notion-meta">
-        <input
-          type="date"
-          value={selectedDate}
-          onChange={(e) => setSelectedDate(e.target.value)}
-          className="text-xs font-semibold bg-slate-100 border border-slate-200 rounded px-2.5 py-1 text-slate-800"
-        />
-        {availableShifts.length > 1 && (
-          <select
-            value={selectedShift}
-            onChange={(e) => setSelectedShift(e.target.value)}
-            className="text-xs font-semibold bg-slate-100 border border-slate-200 rounded px-2.5 py-1 text-slate-800"
+      <div className="notion-doc-header">
+        <div className="notion-doc-breadcrumb">
+          <button
+            type="button"
+            onClick={() => router.push("/dashboard")}
           >
-            {availableShifts.map((s: string) => (
-              <option key={s} value={s}>
-                {s} Shift
-              </option>
-            ))}
-          </select>
-        )}
-        <span>·</span>
-        <span className={`notion-tag ${complianceScore === 100 ? "green" : "blue"}`}>
-          {complianceScore}% Score
-        </span>
-      </div>
+            Workspace
+          </button>
+          <span className="notion-doc-breadcrumb-sep">/</span>
+          <span>{outlet.name}</span>
+          <span className="notion-doc-breadcrumb-sep">/</span>
+          <span className="active">{template.title}</span>
+        </div>
 
-      <hr className="notion-hr" />
+        <div className="notion-doc-title-row">
+          <span className="notion-doc-icon">{template.icon || "📋"}</span>
+          <h1 className="notion-doc-title">{template.title}</h1>
+        </div>
+
+        <div className="notion-doc-meta-bar">
+          <input
+            type="date"
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            className="notion-doc-input"
+          />
+          {availableShifts.length > 1 && (
+            <select
+              value={selectedShift}
+              onChange={(e) => setSelectedShift(e.target.value)}
+              className="notion-doc-select"
+            >
+              {availableShifts.map((s: string) => (
+                <option key={s} value={s}>
+                  {s} Shift
+                </option>
+              ))}
+            </select>
+          )}
+          <span className={`notion-score-tag ${complianceScore === 100 ? "" : "warning"}`}>
+            {complianceScore}% Score
+          </span>
+        </div>
+      </div>
 
       {/* ─── Notion Callout Toast Notification ─────────────────────────────── */}
       {message && (
-        <div className={`callout ${message.type === "success" ? "callout-green" : "callout-red"}`}>
-          <span className="icon">{message.type === "success" ? "✅" : "⚠️"}</span>
-          <div className="flex-1 font-medium">{message.text}</div>
+        <div className={`notion-callout ${message.type === "success" ? "green" : "red"}`} style={{ marginBottom: '16px' }}>
+          <span className="notion-callout-icon">{message.type === "success" ? "✅" : "⚠️"}</span>
+          <div style={{ flex: 1, fontWeight: 500 }}>{message.text}</div>
           <button
             type="button"
             onClick={() => setMessage(null)}
-            className="text-xs text-slate-400 hover:text-slate-700 bg-transparent border-none cursor-pointer"
+            style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#7D7A75', fontSize: '14px', padding: '0 4px' }}
           >
             ✕
           </button>
@@ -713,20 +673,20 @@ function getInitialDataForSchema(
         <div className="sheet-body-content">
           {/* 0. UNIVERSAL DYNAMIC CHECKLIST (Custom report tabs, custom categories, or typed items) */}
           {isDynamicTemplate && (
-            <div className="sections-grid">
+            <div>
               {sections.map((sec: any) => {
                 const secItems = sec.items || [];
                 return (
-                  <div key={sec.id} className="checklist-section-card">
-                    <div className="checklist-section-header">
-                      <div>
-                        <h2 className="checklist-section-title">{sec.title}</h2>
-                        <span className="checklist-section-count">{secItems.length} checkpoints</span>
+                  <div key={sec.id} className="notion-section-block">
+                    <div className="notion-section-header-row">
+                      <div className="notion-section-title-wrap">
+                        <h2 className="notion-section-title">{sec.title}</h2>
+                        <span className="notion-section-badge">{secItems.length} checkpoints</span>
                       </div>
-                      <div className="checklist-batch-actions">
+                      <div className="notion-section-actions">
                         <button
                           type="button"
-                          className="batch-btn pass"
+                          className="notion-action-btn pass"
                           onClick={() => {
                             const updatedCheckpoints = { ...(formData.checkpoints || {}) };
                             secItems.forEach((it: any) => {
@@ -755,7 +715,7 @@ function getInitialDataForSchema(
                         </button>
                         <button
                           type="button"
-                          className="batch-btn na"
+                          className="notion-action-btn"
                           onClick={() => {
                             const updatedCheckpoints = { ...(formData.checkpoints || {}) };
                             secItems.forEach((it: any) => {
@@ -776,7 +736,7 @@ function getInitialDataForSchema(
                         </button>
                         <button
                           type="button"
-                          className="batch-btn fail"
+                          className="notion-action-btn fail"
                           onClick={() => {
                             const updatedCheckpoints = { ...(formData.checkpoints || {}) };
                             secItems.forEach((it: any) => {
@@ -797,7 +757,7 @@ function getInitialDataForSchema(
                       </div>
                     </div>
 
-                    <div className="checklist-items-stack">
+                    <div>
                       {secItems.map((item: any, idx: number) => {
                         const itemType = item.itemType || (item.targetMinTemp !== undefined ? "TEMPERATURE" : "STATUS");
                         const min = item.targetMinTemp ?? item.targetMin;
@@ -837,89 +797,85 @@ function getInitialDataForSchema(
                           ((min !== undefined && parseFloat(cp.temp) < min) || (max !== undefined && parseFloat(cp.temp) > max));
 
                         return (
-                          <div key={item.id || idx} className={`checkpoint-card ${isBreach ? "card-breach" : ""}`}>
-                            <div className="checkpoint-card-top">
-                              <div className="checkpoint-name">{item.name || item.task}</div>
-                              {item.hint && <div className="checkpoint-hint">{item.hint}</div>}
-                              {(min !== undefined || max !== undefined) && (
-                                <span className="checkpoint-safe-badge">
-                                  Safe: {min !== undefined ? `${min}` : "-∞"} to {max !== undefined ? `${max}` : "+∞"} {unit}
-                                </span>
-                              )}
-                            </div>
+                          <div key={item.id || idx} className={`notion-checkpoint-card ${isBreach ? "card-breach" : ""}`}>
+                            <div className="notion-checkpoint-top">
+                              <div className="notion-checkpoint-info">
+                                <h3 className="notion-checkpoint-title">{item.name || item.task}</h3>
+                                {item.hint && <div className="notion-checkpoint-hint">{item.hint}</div>}
+                                {(min !== undefined || max !== undefined) && (
+                                  <span className="notion-checkpoint-spec">
+                                    Safe: {min !== undefined ? `${min}` : "-∞"} to {max !== undefined ? `${max}` : "+∞"} {unit}
+                                  </span>
+                                )}
+                              </div>
 
-                            <div className="checkpoint-action-row">
-                              {itemType === "TEMPERATURE" && (
-                                <div className="temp-control-wrap">
+                              <div className="notion-checkpoint-action">
+                                {itemType === "TEMPERATURE" && (
                                   <TouchTempSelect
                                     value={cp.temp}
                                     min={min ?? -20}
                                     max={max ?? 10}
                                     onChange={(val) => updateCp({ temp: val })}
                                   />
-                                  {cp.temp && cp.temp !== "N/A" && (
-                                    <span className={!isBreach ? "optimal-tag" : "breach-tag"}>
-                                      {!isBreach ? "✓ In Spec" : "⚠️ Breach"}
-                                    </span>
-                                  )}
-                                </div>
-                              )}
+                                )}
 
-                              {itemType === "NUMERIC" && (
-                                <div className="numeric-control-wrap">
-                                  <input
-                                    type="number"
-                                    step="any"
-                                    value={cp.value ?? ""}
-                                    placeholder={`Value (${unit || "qty"})`}
-                                    onChange={(e) => updateCp({ value: e.target.value })}
-                                    className="control-input"
+                                {itemType === "NUMERIC" && (
+                                  <div className="notion-numeric-wrap">
+                                    <input
+                                      type="number"
+                                      step="any"
+                                      value={cp.value ?? ""}
+                                      placeholder={`Value (${unit || "qty"})`}
+                                      onChange={(e) => updateCp({ value: e.target.value })}
+                                      className="notion-numeric-input"
+                                    />
+                                    {unit && <span style={{ fontSize: '11.5px', fontWeight: 600, color: '#7D7A75' }}>{unit}</span>}
+                                    <button
+                                      type="button"
+                                      className={`notion-temp-na-btn ${cp.value === "N/A" ? "active" : ""}`}
+                                      onClick={() => updateCp({ value: cp.value === "N/A" ? "" : "N/A" })}
+                                    >
+                                      N/A
+                                    </button>
+                                  </div>
+                                )}
+
+                                {itemType === "CLEAN_DIRTY" && (
+                                  <CleanDirtyNaToggle
+                                    value={cp.status}
+                                    onChange={(val) => updateCp({ status: val })}
                                   />
-                                  {unit && <span className="text-xs font-semibold text-slate-500">{unit}</span>}
-                                  <button
-                                    type="button"
-                                    className={`na-toggle-btn ${cp.value === "N/A" ? "active" : ""}`}
-                                    onClick={() => updateCp({ value: cp.value === "N/A" ? "" : "N/A" })}
-                                  >
-                                    N/A
-                                  </button>
-                                </div>
-                              )}
+                                )}
 
-                              {itemType === "CLEAN_DIRTY" && (
-                                <CleanDirtyNaToggle
-                                  value={cp.status}
-                                  onChange={(val) => updateCp({ status: val })}
-                                />
-                              )}
+                                {itemType === "STATUS" && (
+                                  <YesNoNaToggle
+                                    value={cp.status}
+                                    onChange={(val) => updateCp({ status: val })}
+                                  />
+                                )}
 
-                              {itemType === "STATUS" && (
-                                <YesNoNaToggle
-                                  value={cp.status}
-                                  onChange={(val) => updateCp({ status: val })}
-                                />
-                              )}
-
-                              {itemType === "TEXT" && (
-                                <input
-                                  type="text"
-                                  value={cp.value || ""}
-                                  placeholder="Observation or remark..."
-                                  onChange={(e) => updateCp({ value: e.target.value })}
-                                  className="control-input w-full"
-                                />
-                              )}
+                                {itemType === "TEXT" && (
+                                  <input
+                                    type="text"
+                                    value={cp.value || ""}
+                                    placeholder="Observation or remark..."
+                                    onChange={(e) => updateCp({ value: e.target.value })}
+                                    className="notion-callout-input"
+                                    style={{ border: '1px solid #E6E5E3', borderRadius: '6px', padding: '6px 10px', background: '#FFFFFF', minHeight: '34px' }}
+                                  />
+                                )}
+                              </div>
                             </div>
 
                             {(cp.status === "NO" || cp.status === "DIRTY" || isBreach || cp.notes) && (
-                              <div className={`callout ${isBreach || cp.status === "NO" || cp.status === "DIRTY" ? "callout-red" : "callout-yellow"} mt-2`}>
-                                <span className="icon">{isBreach || cp.status === "NO" || cp.status === "DIRTY" ? "🚨" : "📝"}</span>
+                              <div className={`notion-callout ${isBreach || cp.status === "NO" || cp.status === "DIRTY" ? "red" : "yellow"}`}>
+                                <span className="notion-callout-icon">{isBreach || cp.status === "NO" || cp.status === "DIRTY" ? "🚨" : "📝"}</span>
                                 <input
                                   type="text"
                                   value={cp.notes || ""}
                                   placeholder={isBreach ? "Corrective action for temperature breach..." : "Observation or corrective note..."}
                                   onChange={(e) => updateCp({ notes: e.target.value })}
-                                  className="w-full bg-transparent border-none outline-none text-xs font-medium text-slate-800 placeholder:text-slate-400"
+                                  className="notion-callout-input"
                                 />
                               </div>
                             )}
@@ -935,16 +891,16 @@ function getInitialDataForSchema(
 
           {/* 1. HOUSEKEEPING / MULTI-SHIFT CHECKLIST */}
           {!isDynamicTemplate && template.category === "HOUSEKEEPING" && (
-            <div className="checklist-section-card">
-              <div className="checklist-section-header">
-                <div>
-                  <h2 className="checklist-section-title">{sections[0]?.title || "Housekeeping & Sanitization"}</h2>
-                  <span className="checklist-section-count">{(formData.items || []).length} checkpoints</span>
+            <div className="notion-section-block">
+              <div className="notion-section-header-row">
+                <div className="notion-section-title-wrap">
+                  <h2 className="notion-section-title">{sections[0]?.title || "Housekeeping & Sanitization"}</h2>
+                  <span className="notion-section-badge">{(formData.items || []).length} checkpoints</span>
                 </div>
-                <div className="checklist-batch-actions">
+                <div className="notion-section-actions">
                   <button
                     type="button"
-                    className="batch-btn pass"
+                    className="notion-action-btn pass"
                     onClick={() => {
                       setFormData({
                         ...formData,
@@ -956,7 +912,7 @@ function getInitialDataForSchema(
                   </button>
                   <button
                     type="button"
-                    className="batch-btn na"
+                    className="notion-action-btn"
                     onClick={() => {
                       setFormData({
                         ...formData,
@@ -969,12 +925,14 @@ function getInitialDataForSchema(
                 </div>
               </div>
 
-              <div className="checklist-items-stack">
+              <div>
                 {(formData.items || []).map((item: any, idx: number) => (
-                  <div key={item.id || idx} className="checkpoint-card">
-                    <div className="checkpoint-card-top">
-                      <span className="checkpoint-name">{item.name}</span>
-                      <div className="checkpoint-action-row">
+                  <div key={item.id || idx} className="notion-checkpoint-card">
+                    <div className="notion-checkpoint-top">
+                      <div className="notion-checkpoint-info">
+                        <h3 className="notion-checkpoint-title">{item.name}</h3>
+                      </div>
+                      <div className="notion-checkpoint-action">
                         <YesNoNaToggle
                           value={item.status}
                           onChange={(val) => {
@@ -986,8 +944,8 @@ function getInitialDataForSchema(
                       </div>
                     </div>
                     {(item.status === "NO" || item.notes) && (
-                      <div className={`callout ${item.status === "NO" ? "callout-red" : "callout-yellow"} mt-2`}>
-                        <span className="icon">{item.status === "NO" ? "🚨" : "📝"}</span>
+                      <div className={`notion-callout ${item.status === "NO" ? "red" : "yellow"}`}>
+                        <span className="notion-callout-icon">{item.status === "NO" ? "🚨" : "📝"}</span>
                         <input
                           type="text"
                           value={item.notes || ""}
@@ -997,7 +955,7 @@ function getInitialDataForSchema(
                             newItems[idx] = { ...item, notes: e.target.value };
                             setFormData({ ...formData, items: newItems });
                           }}
-                          className="w-full bg-transparent border-none outline-none text-xs font-medium text-slate-800 placeholder:text-slate-400"
+                          className="notion-callout-input"
                         />
                       </div>
                     )}
@@ -1009,22 +967,22 @@ function getInitialDataForSchema(
 
           {/* 2. EQUIPMENT SANITIZATION */}
           {!isDynamicTemplate && template.category === "EQUIPMENT" && (
-            <div className="sections-grid">
+            <div>
               {sections.map((sec: any) => {
                 const secItems = (formData.completedItems || []).filter((ci: any) =>
                   (sec.items || []).some((i: any) => i.id === ci.id || i.name === ci.name)
                 );
                 return (
-                  <div key={sec.id} className="checklist-section-card">
-                    <div className="checklist-section-header">
-                      <div>
-                        <h2 className="checklist-section-title">{sec.title}</h2>
-                        <span className="checklist-section-count">{secItems.length} units</span>
+                  <div key={sec.id} className="notion-section-block">
+                    <div className="notion-section-header-row">
+                      <div className="notion-section-title-wrap">
+                        <h2 className="notion-section-title">{sec.title}</h2>
+                        <span className="notion-section-badge">{secItems.length} units</span>
                       </div>
-                      <div className="checklist-batch-actions">
+                      <div className="notion-section-actions">
                         <button
                           type="button"
-                          className="batch-btn pass"
+                          className="notion-action-btn pass"
                           onClick={() => {
                             const updated = (formData.completedItems || []).map((ci: any) => {
                               if ((sec.items || []).some((i: any) => i.id === ci.id || i.name === ci.name)) {
@@ -1039,7 +997,7 @@ function getInitialDataForSchema(
                         </button>
                         <button
                           type="button"
-                          className="batch-btn na"
+                          className="notion-action-btn"
                           onClick={() => {
                             const updated = (formData.completedItems || []).map((ci: any) => {
                               if ((sec.items || []).some((i: any) => i.id === ci.id || i.name === ci.name)) {
@@ -1055,16 +1013,18 @@ function getInitialDataForSchema(
                       </div>
                     </div>
 
-                    <div className="checklist-items-stack">
+                    <div>
                       {secItems.map((ci: any, idx: number) => {
                         const globalIdx = (formData.completedItems || []).findIndex(
                           (x: any) => x.id === ci.id
                         );
                         return (
-                          <div key={ci.id || idx} className="checkpoint-card">
-                            <div className="checkpoint-card-top">
-                              <span className="checkpoint-name">{ci.name}</span>
-                              <div className="checkpoint-action-row">
+                          <div key={ci.id || idx} className="notion-checkpoint-card">
+                            <div className="notion-checkpoint-top">
+                              <div className="notion-checkpoint-info">
+                                <h3 className="notion-checkpoint-title">{ci.name}</h3>
+                              </div>
+                              <div className="notion-checkpoint-action">
                                 <YesNoNaToggle
                                   value={ci.status}
                                   onChange={(val) => {
@@ -1076,8 +1036,8 @@ function getInitialDataForSchema(
                               </div>
                             </div>
                             {(ci.status === "NO" || ci.notes) && (
-                              <div className={`callout ${ci.status === "NO" ? "callout-red" : "callout-yellow"} mt-2`}>
-                                <span className="icon">{ci.status === "NO" ? "🚨" : "📝"}</span>
+                              <div className={`notion-callout ${ci.status === "NO" ? "red" : "yellow"}`}>
+                                <span className="notion-callout-icon">{ci.status === "NO" ? "🚨" : "📝"}</span>
                                 <input
                                   type="text"
                                   value={ci.notes || ""}
@@ -1087,7 +1047,7 @@ function getInitialDataForSchema(
                                     newItems[globalIdx] = { ...ci, notes: e.target.value };
                                     setFormData({ ...formData, completedItems: newItems });
                                   }}
-                                  className="w-full bg-transparent border-none outline-none text-xs font-medium text-slate-800 placeholder:text-slate-400"
+                                  className="notion-callout-input"
                                 />
                               </div>
                             )}
@@ -1103,16 +1063,16 @@ function getInitialDataForSchema(
 
           {/* 3. TEMPERATURE & COLD CHAIN LOG */}
           {!isDynamicTemplate && template.category === "TEMPERATURE" && (
-            <div className="checklist-section-card">
-              <div className="checklist-section-header">
-                <div>
-                  <h2 className="checklist-section-title">Cold Storage & Refrigeration</h2>
-                  <span className="checklist-section-count">{(formData.readings || []).length} units</span>
+            <div className="notion-section-block">
+              <div className="notion-section-header-row">
+                <div className="notion-section-title-wrap">
+                  <h2 className="notion-section-title">Cold Storage & Refrigeration</h2>
+                  <span className="notion-section-badge">{(formData.readings || []).length} units</span>
                 </div>
-                <div className="checklist-batch-actions">
+                <div className="notion-section-actions">
                   <button
                     type="button"
-                    className="batch-btn pass"
+                    className="notion-action-btn pass"
                     onClick={() => {
                       const updated = (formData.readings || []).map((reading: any) => {
                         const schemaItem = sections
@@ -1134,7 +1094,7 @@ function getInitialDataForSchema(
                   </button>
                   <button
                     type="button"
-                    className="batch-btn na"
+                    className="notion-action-btn"
                     onClick={() => {
                       const updated = (formData.readings || []).map((reading: any) => ({
                         ...reading,
@@ -1149,7 +1109,7 @@ function getInitialDataForSchema(
                 </div>
               </div>
 
-              <div className="checklist-items-stack">
+              <div>
                 {(formData.readings || []).map((reading: any, idx: number) => {
                   const schemaItem = sections
                     .flatMap((s: any) => s.items || [])
@@ -1163,24 +1123,22 @@ function getInitialDataForSchema(
                     (!isNaN(eNum) && (eNum < min || eNum > max));
 
                   return (
-                    <div key={reading.id || idx} className={`checkpoint-card ${isBreach ? "card-breach" : ""}`}>
-                      <div className="flex items-center justify-between gap-2 mb-2">
-                        <div>
-                          <span className="checkpoint-name">{reading.name}</span>
-                          {reading.machineNumber && (
-                            <span className="text-[11px] text-slate-400 font-medium ml-1.5">
-                              #{reading.machineNumber}
-                            </span>
-                          )}
+                    <div key={reading.id || idx} className={`notion-checkpoint-card ${isBreach ? "card-breach" : ""}`}>
+                      <div className="notion-checkpoint-top">
+                        <div className="notion-checkpoint-info">
+                          <h3 className="notion-checkpoint-title">
+                            {reading.name}
+                            {reading.machineNumber && ` #${reading.machineNumber}`}
+                          </h3>
                         </div>
-                        <span className="text-xs font-mono font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded">
+                        <span className="notion-checkpoint-spec">
                           {reading.referenceTemp || `${min}°C to ${max}°C`}
                         </span>
                       </div>
 
-                      <div className="temp-slots-grid">
-                        <div className="temp-slot">
-                          <span className="temp-slot-label">Morning</span>
+                      <div className="notion-temp-slots">
+                        <div className="notion-temp-slot-item">
+                          <span className="notion-temp-slot-label">Morning</span>
                           <TouchTempSelect
                             value={reading.morningTemp}
                             min={min}
@@ -1192,8 +1150,8 @@ function getInitialDataForSchema(
                             }}
                           />
                         </div>
-                        <div className="temp-slot">
-                          <span className="temp-slot-label">Evening</span>
+                        <div className="notion-temp-slot-item">
+                          <span className="notion-temp-slot-label">Evening</span>
                           <TouchTempSelect
                             value={reading.eveningTemp}
                             min={min}
@@ -1208,11 +1166,9 @@ function getInitialDataForSchema(
                       </div>
 
                       {isBreach && (
-                        <div className="callout callout-red mt-2">
-                          <span className="icon">🚨</span>
-                          <div className="text-xs font-semibold text-rose-800">
-                            Temperature Breach: Out of safe tolerance ({min}°C to {max}°C)
-                          </div>
+                        <div className="notion-callout red">
+                          <span className="notion-callout-icon">🚨</span>
+                          <span>Temperature Breach: Out of safe tolerance ({min}°C to {max}°C)</span>
                         </div>
                       )}
                     </div>
@@ -1224,16 +1180,16 @@ function getInitialDataForSchema(
 
           {/* 4. SAFETY GLASS / PEST / FACILITY */}
           {!isDynamicTemplate && template.category === "SAFETY_GLASS" && (
-            <div className="checklist-section-card">
-              <div className="checklist-section-header">
-                <div>
-                  <h2 className="checklist-section-title">Safety & Structural Inspection</h2>
-                  <span className="checklist-section-count">{(formData.locations || []).length} checkpoints</span>
+            <div className="notion-section-block">
+              <div className="notion-section-header-row">
+                <div className="notion-section-title-wrap">
+                  <h2 className="notion-section-title">Safety & Structural Inspection</h2>
+                  <span className="notion-section-badge">{(formData.locations || []).length} checkpoints</span>
                 </div>
-                <div className="checklist-batch-actions">
+                <div className="notion-section-actions">
                   <button
                     type="button"
-                    className="batch-btn pass"
+                    className="notion-action-btn pass"
                     onClick={() => {
                       setFormData({
                         ...formData,
@@ -1245,7 +1201,7 @@ function getInitialDataForSchema(
                   </button>
                   <button
                     type="button"
-                    className="batch-btn na"
+                    className="notion-action-btn"
                     onClick={() => {
                       setFormData({
                         ...formData,
@@ -1258,12 +1214,14 @@ function getInitialDataForSchema(
                 </div>
               </div>
 
-              <div className="checklist-items-stack">
+              <div>
                 {(formData.locations || []).map((loc: any, idx: number) => (
-                  <div key={loc.id || idx} className="checkpoint-card">
-                    <div className="checkpoint-card-top">
-                      <span className="checkpoint-name">{loc.location}</span>
-                      <div className="checkpoint-action-row">
+                  <div key={loc.id || idx} className="notion-checkpoint-card">
+                    <div className="notion-checkpoint-top">
+                      <div className="notion-checkpoint-info">
+                        <h3 className="notion-checkpoint-title">{loc.location}</h3>
+                      </div>
+                      <div className="notion-checkpoint-action">
                         <YesNoNaToggle
                           value={loc.status}
                           onChange={(val) => {
@@ -1275,8 +1233,8 @@ function getInitialDataForSchema(
                       </div>
                     </div>
                     {(loc.status === "NO" || loc.notes) && (
-                      <div className={`callout ${loc.status === "NO" ? "callout-red" : "callout-yellow"} mt-2`}>
-                        <span className="icon">{loc.status === "NO" ? "🚨" : "📝"}</span>
+                      <div className={`notion-callout ${loc.status === "NO" ? "red" : "yellow"}`}>
+                        <span className="notion-callout-icon">{loc.status === "NO" ? "🚨" : "📝"}</span>
                         <input
                           type="text"
                           value={loc.notes || ""}
@@ -1286,7 +1244,7 @@ function getInitialDataForSchema(
                             newLocs[idx] = { ...loc, notes: e.target.value };
                             setFormData({ ...formData, locations: newLocs });
                           }}
-                          className="w-full bg-transparent border-none outline-none text-xs font-medium text-slate-800 placeholder:text-slate-400"
+                          className="notion-callout-input"
                         />
                       </div>
                     )}
@@ -1298,16 +1256,16 @@ function getInitialDataForSchema(
 
           {/* 5. MONTHLY MAINTENANCE & CUSTOM */}
           {!isDynamicTemplate && (template.category === "MAINTENANCE" || template.category === "CUSTOM") && (
-            <div className="checklist-section-card">
-              <div className="checklist-section-header">
-                <div>
-                  <h2 className="checklist-section-title">Periodic & Maintenance Tasks</h2>
-                  <span className="checklist-section-count">{(formData.tasks || []).length} tasks</span>
+            <div className="notion-section-block">
+              <div className="notion-section-header-row">
+                <div className="notion-section-title-wrap">
+                  <h2 className="notion-section-title">Periodic & Maintenance Tasks</h2>
+                  <span className="notion-section-badge">{(formData.tasks || []).length} tasks</span>
                 </div>
-                <div className="checklist-batch-actions">
+                <div className="notion-section-actions">
                   <button
                     type="button"
-                    className="batch-btn pass"
+                    className="notion-action-btn pass"
                     onClick={() => {
                       setFormData({
                         ...formData,
@@ -1319,7 +1277,7 @@ function getInitialDataForSchema(
                   </button>
                   <button
                     type="button"
-                    className="batch-btn na"
+                    className="notion-action-btn"
                     onClick={() => {
                       setFormData({
                         ...formData,
@@ -1332,19 +1290,19 @@ function getInitialDataForSchema(
                 </div>
               </div>
 
-              <div className="checklist-items-stack">
+              <div>
                 {(formData.tasks || []).map((task: any, idx: number) => (
-                  <div key={task.id || idx} className="checkpoint-card">
-                    <div className="checkpoint-card-top">
-                      <div>
-                        <span className="checkpoint-name">{task.task}</span>
+                  <div key={task.id || idx} className="notion-checkpoint-card">
+                    <div className="notion-checkpoint-top">
+                      <div className="notion-checkpoint-info">
+                        <h3 className="notion-checkpoint-title">{task.task}</h3>
                         {task.category && (
-                          <span className="text-[11px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded ml-2">
+                          <span className="notion-checkpoint-spec" style={{ marginTop: '2px' }}>
                             {task.category}
                           </span>
                         )}
                       </div>
-                      <div className="checkpoint-action-row">
+                      <div className="notion-checkpoint-action">
                         <YesNoNaToggle
                           value={task.status}
                           onChange={(val) => {
@@ -1356,8 +1314,8 @@ function getInitialDataForSchema(
                       </div>
                     </div>
                     {(task.status === "NO" || task.notes) && (
-                      <div className={`callout ${task.status === "NO" ? "callout-red" : "callout-yellow"} mt-2`}>
-                        <span className="icon">{task.status === "NO" ? "🚨" : "📝"}</span>
+                      <div className={`notion-callout ${task.status === "NO" ? "red" : "yellow"}`}>
+                        <span className="notion-callout-icon">{task.status === "NO" ? "🚨" : "📝"}</span>
                         <input
                           type="text"
                           value={task.notes || ""}
@@ -1367,7 +1325,7 @@ function getInitialDataForSchema(
                             newTasks[idx] = { ...task, notes: e.target.value };
                             setFormData({ ...formData, tasks: newTasks });
                           }}
-                          className="w-full bg-transparent border-none outline-none text-xs font-medium text-slate-800 placeholder:text-slate-400"
+                          className="notion-callout-input"
                         />
                       </div>
                     )}
@@ -1378,9 +1336,9 @@ function getInitialDataForSchema(
           )}
 
           {/* Minimal Shift Notes & Verification */}
-          <div className="notion-card mt-6 p-4">
-            <div className="footer-notes-box">
-              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1 block">
+          <div className="notion-checkpoint-card" style={{ marginTop: '16px' }}>
+            <div style={{ marginBottom: '8px' }}>
+              <label style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#7D7A75', display: 'block', marginBottom: '4px' }}>
                 Shift Notes & Handover Remarks (Optional)
               </label>
               <textarea
@@ -1388,31 +1346,29 @@ function getInitialDataForSchema(
                 onChange={(e) => setComments(e.target.value)}
                 placeholder="Add shift observations or handover remarks..."
                 rows={2}
-                className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-800 outline-none focus:border-slate-400 focus:bg-white transition-all"
+                className="notion-textarea"
               />
             </div>
 
-            <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between">
-              <label className="flex items-center gap-2 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  id="signoff-checkbox"
-                  checked={supervisorSigned}
-                  onChange={(e) => setSupervisorSigned(e.target.checked)}
-                  className="w-4 h-4 rounded text-slate-900 focus:ring-0 cursor-pointer accent-slate-900"
-                />
-                <span className="text-xs font-medium text-slate-700">
-                  Verified by {supervisorName || currentUser.name}
-                </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingTop: '8px', borderTop: '1px solid #F1F1EF' }}>
+              <input
+                type="checkbox"
+                id="signoff-checkbox"
+                checked={supervisorSigned}
+                onChange={(e) => setSupervisorSigned(e.target.checked)}
+                className="notion-checkbox"
+              />
+              <label htmlFor="signoff-checkbox" style={{ fontSize: '12.5px', fontWeight: 500, color: '#2C2C2B', cursor: 'pointer' }}>
+                Verified by {supervisorName || currentUser.name}
               </label>
             </div>
           </div>
 
           {/* Sticky Bottom Save Action Bar */}
-          <div className="sticky-action-bar">
-            <div className="action-bar-inner">
-              <div className="hidden sm:flex items-center gap-2 text-xs font-medium text-slate-500">
-                <span className="dot-live" />
+          <div className="notion-submit-bar">
+            <div className="notion-submit-bar-inner">
+              <div className="notion-submit-status">
+                <span className="notion-status-indicator" />
                 <span>
                   {existingSubmissionId ? "Saved Record" : "New Entry"} • {selectedDate}
                 </span>
@@ -1421,7 +1377,7 @@ function getInitialDataForSchema(
                 type="button"
                 onClick={handleSave}
                 disabled={saving}
-                className="notion-btn-primary w-full sm:w-auto"
+                className="notion-save-button"
               >
                 {saving ? "Saving..." : existingSubmissionId ? "Update Submission" : "Submit Checklist"}
               </button>

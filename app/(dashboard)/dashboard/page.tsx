@@ -106,44 +106,47 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   return (
     <div className="notion-page-container">
       {/* ─── Notion Breadcrumb & Header ─────────────────────────────────────── */}
-      <div className="notion-breadcrumb">
-        <span>Workspace</span>
-        <span>/</span>
-        <span>{currentOutlet.name}</span>
-        <span>/</span>
-        <span className="text-slate-900 font-semibold">Checklists</span>
-      </div>
+      <div className="notion-doc-header">
+        <div className="notion-doc-breadcrumb">
+          <span>Workspace</span>
+          <span className="notion-doc-breadcrumb-sep">/</span>
+          <span>{currentOutlet.name}</span>
+          <span className="notion-doc-breadcrumb-sep">/</span>
+          <span className="active">Checklists</span>
+        </div>
 
-      <div className="notion-page-icon">📋</div>
+        <div className="notion-doc-title-row">
+          <span className="notion-doc-icon">📋</span>
+          <h1 className="notion-doc-title">Daily Operations & Compliance</h1>
+        </div>
 
-      <h1 className="notion-title">Daily Operations & Compliance</h1>
-
-      <div className="notion-meta">
-        <span className="notion-tag blue">{formatDate(today)}</span>
-        <span className="notion-tag">{currentOutlet.name}</span>
-        <span>·</span>
-        <span>{doneCount} of {totalCount} completed</span>
-        {doneCount === totalCount && totalCount > 0 ? (
-          <span className="notion-tag green">✓ All Done</span>
-        ) : null}
+        <div className="notion-doc-meta-bar">
+          <span className="notion-score-tag">{formatDate(today)}</span>
+          <span className="notion-doc-tag">
+            {doneCount} of {totalCount} completed
+          </span>
+          {doneCount === totalCount && totalCount > 0 && (
+            <span className="notion-score-tag">✓ All Completed</span>
+          )}
+        </div>
       </div>
 
       <hr className="notion-hr" />
 
-      {/* ─── Notion List View (Checklists) ─────────────────────────────────── */}
-      <div className="notion-list-stack">
-        {outletTemplates.length === 0 ? (
-          <div className="callout callout-gray">
-            <span className="icon">ℹ️</span>
-            <div>
-              <strong>No checklists configured.</strong> Add or enable templates for {currentOutlet.name} in{" "}
-              <Link href="/admin/templates" className="text-blue-600 underline">
-                Admin Templates
-              </Link>.
-            </div>
+      {/* ─── Notion Database List (Checklists) ─────────────────────────────── */}
+      {outletTemplates.length === 0 ? (
+        <div className="callout callout-gray">
+          <span className="icon">ℹ️</span>
+          <div>
+            <strong>No checklists configured.</strong> Add or enable templates for {currentOutlet.name} in{" "}
+            <Link href="/admin/templates" style={{ color: '#2C2C2B', textDecoration: 'underline' }}>
+              Admin Templates
+            </Link>.
           </div>
-        ) : (
-          outletTemplates.map((ot) => {
+        </div>
+      ) : (
+        <div className="notion-db-list">
+          {outletTemplates.map((ot) => {
             const tpl = ot.template;
             const subs = submissionMap.get(tpl.id) || [];
             const isDone = subs.length > 0;
@@ -154,45 +157,45 @@ export default async function DashboardPage({ searchParams }: PageProps) {
               <Link
                 key={tpl.id}
                 href={`/${currentOutlet.id}/${tpl.slug}`}
-                className="notion-row-item"
+                className="notion-db-row"
               >
-                <div className="flex items-center gap-3.5 min-w-0">
-                  <span className="notion-row-icon">{icon}</span>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="notion-row-title">{tpl.title}</span>
+                <div className="notion-db-row-left">
+                  <span className="notion-db-icon">{icon}</span>
+                  <div className="notion-db-row-text">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span className="notion-db-title">{tpl.title}</span>
                       {tpl.frequency === "SHIFT_WISE" && (
-                        <span className="notion-tag">Shift</span>
+                        <span className="notion-db-tag">Shift</span>
                       )}
                     </div>
-                    <div className="notion-row-sub">
+                    <span className="notion-db-sub">
                       {isDone ? (
-                        <span className="text-emerald-700 font-medium">
+                        <span style={{ color: '#1F6B45', fontWeight: 500 }}>
                           ✓ Logged today by {latestSub.submittedBy?.name || "Staff"}
                         </span>
                       ) : (
-                        <span>Tap to complete inspection</span>
+                        <span>Pending daily entry</span>
                       )}
-                    </div>
+                    </span>
                   </div>
                 </div>
 
-                <div className="flex-shrink-0">
+                <div className="notion-db-row-right">
                   {isDone ? (
-                    <span className="notion-badge-done">
-                      <CheckCircle2 size={13} /> Completed
+                    <span className="notion-pill-done">
+                      ✓ Done
                     </span>
                   ) : (
-                    <span className="notion-badge-start">
-                      Start <ArrowRight size={13} />
+                    <span className="notion-pill-start">
+                      Start →
                     </span>
                   )}
                 </div>
               </Link>
             );
-          })
-        )}
-      </div>
+          })}
+        </div>
+      )}
     </div>
   );
 }

@@ -82,12 +82,12 @@ export default function Sidebar({ user, sheetStatuses = {} }: SidebarProps) {
       {/* ─── Mobile Top App Bar (Apple HIG Touch Optimized) ────────────────── */}
       <header className="mobile-topbar">
         {isFormPage ? (
-          <div className="flex items-center justify-between w-full">
-            <Link href="/dashboard" className="flex items-center gap-1.5 text-xs font-bold text-blue-600 py-1.5 pr-2">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+            <Link href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', fontWeight: 600, color: '#2C2C2B', textDecoration: 'none' }}>
               <ChevronLeft size={18} />
               <span>Dashboard</span>
             </Link>
-            <span className="text-xs font-bold text-slate-700 truncate max-w-[160px]">
+            <span style={{ fontSize: '12px', fontWeight: 600, color: '#7D7A75', maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {activeOutlet?.name || "Checklist"}
             </span>
           </div>
