@@ -578,8 +578,9 @@ export default function PlatformClient({
                   const latestRecord = org.billingRecords?.[0];
                   const checkoutUrl = latestRecord?.checkoutUrl;
 
+                  const origin = typeof window !== "undefined" ? window.location.origin : (process.env.NEXTAUTH_URL || "http://localhost:3000");
                   const whatsappMessage = encodeURIComponent(
-                    `Hello ${org.name},\nHere is your official Dodo Payments subscription link for OVYRO FDA Reporting (${formatINR(org.monthlyFee)}/${isAnnual ? "year" : "month"}):\n${checkoutUrl || `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/admin/platform`}\n\nPlease tap to complete payment securely via Dodo Payments. Thank you!`
+                    `Hello ${org.name},\nHere is your official Dodo Payments subscription link for OVYRO FDA Reporting (${formatINR(org.monthlyFee)}/${isAnnual ? "year" : "month"}):\n${checkoutUrl || `${origin}/admin/platform`}\n\nPlease tap to complete payment securely via Dodo Payments. Thank you!`
                   );
                   const whatsappUrl = cleanPhone
                     ? `https://wa.me/${cleanPhone}?text=${whatsappMessage}`

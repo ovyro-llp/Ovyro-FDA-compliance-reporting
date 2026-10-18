@@ -9,6 +9,14 @@ if (!process.env.AUTH_SECRET) {
     "saas_reporting_secure_jwt_secret_2026_super_session_key_7781";
 }
 
+if (process.env.NEXTAUTH_URL && !process.env.NEXTAUTH_URL.startsWith("http://") && !process.env.NEXTAUTH_URL.startsWith("https://")) {
+  process.env.NEXTAUTH_URL = `https://${process.env.NEXTAUTH_URL}`;
+}
+
+if (process.env.AUTH_URL && !process.env.AUTH_URL.startsWith("http://") && !process.env.AUTH_URL.startsWith("https://")) {
+  process.env.AUTH_URL = `https://${process.env.AUTH_URL}`;
+}
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   secret: process.env.AUTH_SECRET,
   trustHost: true,
