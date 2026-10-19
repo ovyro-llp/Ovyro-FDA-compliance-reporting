@@ -614,135 +614,206 @@ export default function OnboardClient({ user, organization, products }: OnboardC
                 )}
               </div>
 
-              <div style={{ marginBottom: "1.25rem" }}>
-                <div style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", padding: "0.2rem 0.5rem", borderRadius: "4px", background: "#f0fdf4", color: "#059669", fontSize: "0.75rem", fontWeight: 700, marginBottom: "0.4rem" }}>
-                  <span>🦤 Dodo Payments Official Gateway</span>
-                </div>
-                <h2 style={{ fontSize: "1.25rem", fontWeight: 700, color: "var(--text-primary, #1c1917)", margin: "0 0 0.25rem 0" }}>
-                  Activate Full Operations Access
-                </h2>
-                <p style={{ fontSize: "0.85rem", color: "var(--text-muted, #78716c)", margin: 0 }}>
-                  A paid subscription is required to submit daily shift reports, add team members, or modify audit sheets.
-                </p>
-              </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "1rem" }}>
-                {/* Monthly Plan */}
-                <div
-                  onClick={() => setSelectedPlan("MONTHLY")}
-                  style={{
-                    padding: "1.25rem",
-                    borderRadius: "var(--radius-md, 12px)",
-                    border: `2px solid ${selectedPlan === "MONTHLY" ? "#059669" : "var(--border, #e6dfd5)"}`,
-                    background: selectedPlan === "MONTHLY" ? "#f0fdf4" : "#ffffff",
-                    cursor: "pointer",
-                    transition: "var(--transition, 0.2s ease)",
-                  }}
-                >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                    <div>
-                      <div style={{ fontWeight: 700, fontSize: "0.95rem", color: "#065f46" }}>
-                        {products.MONTHLY.name}
-                      </div>
-                      <div style={{ fontSize: "0.75rem", color: "var(--text-muted, #78716c)", marginTop: "0.15rem" }}>
-                        Monthly Flex
-                      </div>
+              {organization.billingStatus === "PAID" ? (
+                <>
+                  <div style={{ marginBottom: "1.5rem" }}>
+                    <div style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", padding: "0.25rem 0.6rem", borderRadius: "4px", background: "#f0fdf4", color: "#059669", fontSize: "0.78rem", fontWeight: 700, marginBottom: "0.5rem" }}>
+                      <span>✓</span>
+                      <span>Pro Subscription Active</span>
                     </div>
-                    <span className="plan-badge pro" style={{ fontSize: "0.65rem", padding: "0.15rem 0.45rem", borderRadius: "4px" }}>
-                      Monthly
-                    </span>
+                    <h2 style={{ fontSize: "1.25rem", fontWeight: 700, color: "var(--text-primary, #1c1917)", margin: "0 0 0.25rem 0" }}>
+                      Your Workspace is Fully Activated!
+                    </h2>
+                    <p style={{ fontSize: "0.85rem", color: "var(--text-muted, #78716c)", margin: 0 }}>
+                      You have full access to submit daily shift reports, add team members, and customize regulatory audit sheets.
+                    </p>
                   </div>
 
-                  <div style={{ fontSize: "1.5rem", fontWeight: 800, margin: "0.6rem 0", color: "#059669" }}>
-                    ₹500 <span style={{ fontSize: "0.75rem", fontWeight: 500, color: "var(--text-muted, #78716c)" }}>/ month</span>
-                  </div>
-
-                  <ul style={{ fontSize: "0.78rem", color: "var(--text-secondary, #44403c)", paddingLeft: "1.1rem", lineHeight: 1.5, margin: "0.5rem 0" }}>
-                    <li>Submit daily shift audits &amp; checklists</li>
-                    <li>Digital supervisor sign-off</li>
-                    <li>Add team members &amp; roles</li>
-                  </ul>
-                </div>
-
-                {/* Annual Plan */}
-                <div
-                  onClick={() => setSelectedPlan("ANNUAL")}
-                  style={{
+                  <div style={{
                     padding: "1.25rem",
                     borderRadius: "var(--radius-md, 12px)",
-                    border: `2px solid ${selectedPlan === "ANNUAL" ? "#059669" : "var(--border, #e6dfd5)"}`,
-                    background: selectedPlan === "ANNUAL" ? "#f0fdf4" : "#ffffff",
-                    cursor: "pointer",
-                    position: "relative",
-                    transition: "var(--transition, 0.2s ease)",
-                  }}
-                >
-                  <span style={{
-                    position: "absolute",
-                    top: "10px",
-                    right: "10px",
-                    background: "#dcfce7",
-                    color: "#166534",
-                    fontSize: "0.65rem",
-                    fontWeight: 700,
-                    padding: "0.15rem 0.45rem",
-                    borderRadius: "9999px",
+                    background: "#f0fdf4",
+                    border: "1px solid #a7f3d0",
+                    marginBottom: "1.5rem",
                   }}>
-                    Save ₹1,000 / yr
-                  </span>
-
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: "0.95rem", color: "#065f46" }}>
-                      {products.ANNUAL.name}
-                    </div>
-                    <div style={{ fontSize: "0.75rem", color: "var(--text-muted, #78716c)", marginTop: "0.15rem" }}>
-                      Annual Extended Plan
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <div>
+                        <div style={{ fontWeight: 700, color: "#065f46", fontSize: "1rem" }}>
+                          Annual Pro Compliance Plan
+                        </div>
+                        <div style={{ fontSize: "0.8rem", color: "#047857", marginTop: "0.2rem" }}>
+                          Full Operations &amp; Audit Access • Active
+                        </div>
+                      </div>
+                      <span className="plan-badge pro" style={{ fontSize: "0.75rem", padding: "0.25rem 0.6rem" }}>
+                        Active Plan
+                      </span>
                     </div>
                   </div>
 
-                  <div style={{ fontSize: "1.5rem", fontWeight: 800, margin: "0.6rem 0", color: "#059669" }}>
-                    ₹5,000 <span style={{ fontSize: "0.75rem", fontWeight: 500, color: "var(--text-muted, #78716c)" }}>/ year</span>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "1.5rem", flexWrap: "wrap", gap: "1rem" }}>
+                    <Link
+                      href="/admin/billing"
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "0.4rem",
+                        padding: "0.6rem 1rem",
+                        borderRadius: "8px",
+                        border: "1px solid var(--border, #e6dfd5)",
+                        background: "#ffffff",
+                        color: "var(--text-primary, #1c1917)",
+                        fontSize: "0.85rem",
+                        fontWeight: 600,
+                        textDecoration: "none",
+                      }}
+                    >
+                      <span>Receipts &amp; Invoices →</span>
+                    </Link>
+
+                    <button
+                      type="button"
+                      onClick={() => router.push("/dashboard")}
+                      className="btn-create-primary"
+                      style={{ minWidth: "220px", justifyContent: "center" }}
+                    >
+                      <span>Open Operations Dashboard →</span>
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div style={{ marginBottom: "1.25rem" }}>
+                    <div style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", padding: "0.2rem 0.5rem", borderRadius: "4px", background: "#f0fdf4", color: "#059669", fontSize: "0.75rem", fontWeight: 700, marginBottom: "0.4rem" }}>
+                      <span>🦤 Dodo Payments Official Gateway</span>
+                    </div>
+                    <h2 style={{ fontSize: "1.25rem", fontWeight: 700, color: "var(--text-primary, #1c1917)", margin: "0 0 0.25rem 0" }}>
+                      Activate Full Operations Access
+                    </h2>
+                    <p style={{ fontSize: "0.85rem", color: "var(--text-muted, #78716c)", margin: 0 }}>
+                      A paid subscription is required to submit daily shift reports, add team members, or modify audit sheets.
+                    </p>
                   </div>
 
-                  <ul style={{ fontSize: "0.78rem", color: "var(--text-secondary, #44403c)", paddingLeft: "1.1rem", lineHeight: 1.5, margin: "0.5rem 0" }}>
-                    <li>Everything in Monthly Plan</li>
-                    <li>Priority regulatory audit export</li>
-                    <li>Full team access &amp; custom roles</li>
-                  </ul>
-                </div>
-              </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "1rem" }}>
+                    {/* Monthly Plan */}
+                    <div
+                      onClick={() => setSelectedPlan("MONTHLY")}
+                      style={{
+                        padding: "1.25rem",
+                        borderRadius: "var(--radius-md, 12px)",
+                        border: `2px solid ${selectedPlan === "MONTHLY" ? "#059669" : "var(--border, #e6dfd5)"}`,
+                        background: selectedPlan === "MONTHLY" ? "#f0fdf4" : "#ffffff",
+                        cursor: "pointer",
+                        transition: "var(--transition, 0.2s ease)",
+                      }}
+                    >
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                        <div>
+                          <div style={{ fontWeight: 700, fontSize: "0.95rem", color: "#065f46" }}>
+                            {products.MONTHLY.name}
+                          </div>
+                          <div style={{ fontSize: "0.75rem", color: "var(--text-muted, #78716c)", marginTop: "0.15rem" }}>
+                            Monthly Flex
+                          </div>
+                        </div>
+                        <span className="plan-badge pro" style={{ fontSize: "0.65rem", padding: "0.15rem 0.45rem", borderRadius: "4px" }}>
+                          Monthly
+                        </span>
+                      </div>
 
-              {/* Action Buttons */}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "2rem", flexWrap: "wrap", gap: "1rem" }}>
-                <Link
-                  href="/dashboard"
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "0.4rem",
-                    padding: "0.6rem 1rem",
-                    borderRadius: "8px",
-                    border: "1px solid var(--border, #e6dfd5)",
-                    background: "#ffffff",
-                    color: "var(--text-primary, #1c1917)",
-                    fontSize: "0.85rem",
-                    fontWeight: 600,
-                    textDecoration: "none",
-                  }}
-                >
-                  <span>📋 Inspect My Templates First →</span>
-                </Link>
+                      <div style={{ fontSize: "1.5rem", fontWeight: 800, margin: "0.6rem 0", color: "#059669" }}>
+                        ₹500 <span style={{ fontSize: "0.75rem", fontWeight: 500, color: "var(--text-muted, #78716c)" }}>/ month</span>
+                      </div>
 
-                <button
-                  type="button"
-                  onClick={handleProceedToDodoPayment}
-                  disabled={saving}
-                  className="btn-create-primary"
-                  style={{ minWidth: "220px", justifyContent: "center" }}
-                >
-                  <span>{saving ? "Launching Dodo Checkout..." : `Subscribe with Dodo (${formatINR(products[selectedPlan].priceINR)})`}</span>
-                </button>
-              </div>
+                      <ul style={{ fontSize: "0.78rem", color: "var(--text-secondary, #44403c)", paddingLeft: "1.1rem", lineHeight: 1.5, margin: "0.5rem 0" }}>
+                        <li>Submit daily shift audits &amp; checklists</li>
+                        <li>Digital supervisor sign-off</li>
+                        <li>Add team members &amp; roles</li>
+                      </ul>
+                    </div>
+
+                    {/* Annual Plan */}
+                    <div
+                      onClick={() => setSelectedPlan("ANNUAL")}
+                      style={{
+                        padding: "1.25rem",
+                        borderRadius: "var(--radius-md, 12px)",
+                        border: `2px solid ${selectedPlan === "ANNUAL" ? "#059669" : "var(--border, #e6dfd5)"}`,
+                        background: selectedPlan === "ANNUAL" ? "#f0fdf4" : "#ffffff",
+                        cursor: "pointer",
+                        position: "relative",
+                        transition: "var(--transition, 0.2s ease)",
+                      }}
+                    >
+                      <span style={{
+                        position: "absolute",
+                        top: "10px",
+                        right: "10px",
+                        background: "#dcfce7",
+                        color: "#166534",
+                        fontSize: "0.65rem",
+                        fontWeight: 700,
+                        padding: "0.15rem 0.45rem",
+                        borderRadius: "9999px",
+                      }}>
+                        Save ₹1,000 / yr
+                      </span>
+
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: "0.95rem", color: "#065f46" }}>
+                          {products.ANNUAL.name}
+                        </div>
+                        <div style={{ fontSize: "0.75rem", color: "var(--text-muted, #78716c)", marginTop: "0.15rem" }}>
+                          Annual Extended Plan
+                        </div>
+                      </div>
+
+                      <div style={{ fontSize: "1.5rem", fontWeight: 800, margin: "0.6rem 0", color: "#059669" }}>
+                        ₹5,000 <span style={{ fontSize: "0.75rem", fontWeight: 500, color: "var(--text-muted, #78716c)" }}>/ year</span>
+                      </div>
+
+                      <ul style={{ fontSize: "0.78rem", color: "var(--text-secondary, #44403c)", paddingLeft: "1.1rem", lineHeight: 1.5, margin: "0.5rem 0" }}>
+                        <li>Everything in Monthly Plan</li>
+                        <li>Priority regulatory audit export</li>
+                        <li>Full team access &amp; custom roles</li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "2rem", flexWrap: "wrap", gap: "1rem" }}>
+                    <Link
+                      href="/dashboard"
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "0.4rem",
+                        padding: "0.6rem 1rem",
+                        borderRadius: "8px",
+                        border: "1px solid var(--border, #e6dfd5)",
+                        background: "#ffffff",
+                        color: "var(--text-primary, #1c1917)",
+                        fontSize: "0.85rem",
+                        fontWeight: 600,
+                        textDecoration: "none",
+                      }}
+                    >
+                      <span>📋 Inspect My Templates First →</span>
+                    </Link>
+
+                    <button
+                      type="button"
+                      onClick={handleProceedToDodoPayment}
+                      disabled={saving}
+                      className="btn-create-primary"
+                      style={{ minWidth: "220px", justifyContent: "center" }}
+                    >
+                      <span>{saving ? "Launching Dodo Checkout..." : `Subscribe with Dodo (${formatINR(products[selectedPlan].priceINR)})`}</span>
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           )}
         </div>

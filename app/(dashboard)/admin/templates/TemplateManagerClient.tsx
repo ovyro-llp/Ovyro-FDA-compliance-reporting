@@ -980,30 +980,55 @@ export default function TemplateManagerClient({
             <form onSubmit={handleSave} className="modal-form">
               {error && <div className="form-error-banner">{error}</div>}
 
-              {/* Quick Presets (For New Templates) */}
+              {/* Quick Presets Bar (For New Templates) */}
               {!editingTemplate && (
                 <div className="preset-selector-row">
-                  <span className="preset-label">⚡ Quick Presets:</span>
-                  {Object.keys(PRESETS).map((key) => (
-                    <button
-                      key={key}
-                      type="button"
-                      onClick={() => handlePresetSelect(key)}
-                      className={`preset-btn ${category === PRESETS[key].category || (key === "BLANK" && category === "CUSTOM") ? "active" : ""}`}
-                    >
-                      {PRESETS[key].icon} {key === "BLANK" ? "Start Blank (Custom)" : key.replace(/_/g, " ")}
-                    </button>
-                  ))}
+                  <div className="preset-header-info">
+                    <span className="preset-label">
+                      <span>⚡</span> Quick SOP Presets
+                    </span>
+                    <span className="preset-hint">Pre-fill standard industry sections and checkpoints</span>
+                  </div>
+                  <div className="preset-scroll-track">
+                    {Object.keys(PRESETS).map((key) => {
+                      const isActive = category === PRESETS[key].category || (key === "BLANK" && category === "CUSTOM");
+                      return (
+                        <button
+                          key={key}
+                          type="button"
+                          onClick={() => handlePresetSelect(key)}
+                          className={`preset-btn ${isActive ? "active" : ""}`}
+                        >
+                          <span>{PRESETS[key].icon}</span>
+                          <span>{key === "BLANK" ? "Start Blank" : key.replace(/_/g, " ")}</span>
+                          {isActive && <span style={{ fontSize: "0.7rem", marginLeft: "2px" }}>✓</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
 
               {/* Form Metadata */}
               <div className="form-section-card">
-                <h3 className="section-subtitle">1. Report Tab Information & Settings</h3>
-                
-                <div className="form-row-2">
-                  <div className="form-group">
-                    <label>Report Tab Title *</label>
+                <h3 className="section-subtitle">
+                  <span>⚙️</span> 1. Report Tab Information &amp; Settings
+                </h3>
+
+                {/* Title & Icon Header Row */}
+                <div className="form-group" style={{ marginBottom: "1rem" }}>
+                  <label>Report Tab Title &amp; Icon *</label>
+                  <div className="notion-title-icon-group">
+                    <div className="notion-icon-input-wrap">
+                      <input
+                        type="text"
+                        value={icon}
+                        onChange={(e) => setIcon(e.target.value)}
+                        placeholder="🧹"
+                        className="notion-icon-input"
+                        title="Tab Emoji Icon"
+                      />
+                    </div>
                     <input
                       type="text"
                       required
@@ -1014,58 +1039,35 @@ export default function TemplateManagerClient({
                           setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, "-"));
                         }
                       }}
-                      placeholder="e.g. Cold Chain Storage Log"
+                      placeholder="e.g. Daily Housekeeping & Area SOP"
                       className="form-input"
-                    />
-                  </div>
-
-
-                  <div className="form-group">
-                    <label>URL Slug *</label>
-                    <input
-                      type="text"
-                      required
-                      value={slug}
-                      onChange={(e) => setSlug(e.target.value)}
-                      placeholder="e.g. cold-chain-storage"
-                      className="form-input"
-                      disabled={!!editingTemplate}
+                      style={{ flex: 1, minHeight: "44px", fontSize: "0.95rem", fontWeight: 600 }}
                     />
                   </div>
                 </div>
 
-                <div className="form-row-3">
+                <div className="form-row-2">
                   <div className="form-group">
                     <label>Category Archetype</label>
                     <select
                       value={category}
                       onChange={(e) => setCategory(e.target.value)}
                       className="form-select"
+                      style={{ minHeight: "38px" }}
                     >
-                      <option value="HOUSEKEEPING">🧹 Housekeeping & Area SOPs</option>
-                      <option value="TEMPERATURE">🧊 Temperature & Cold Chain</option>
+                      <option value="HOUSEKEEPING">🧹 Housekeeping &amp; Area SOPs</option>
+                      <option value="TEMPERATURE">🧊 Temperature &amp; Cold Chain</option>
                       <option value="EQUIPMENT">⚙️ Equipment Cleaning Log</option>
-                      <option value="SAFETY_GLASS">🪟 Safety, Glass & Pest</option>
-                      <option value="CHEMICAL">🧪 Chemical Sanitizer & PPM</option>
-                      <option value="COOKING_HACCP">🍳 Cooking Core & Hot Holding</option>
-                      <option value="RAW_MATERIAL_MANUFACTURING">🏭 Raw Material & Batch QA</option>
+                      <option value="SAFETY_GLASS">🪟 Safety, Glass &amp; Pest</option>
+                      <option value="CHEMICAL">🧪 Chemical Sanitizer &amp; PPM</option>
+                      <option value="COOKING_HACCP">🍳 Cooking Core &amp; Hot Holding</option>
+                      <option value="RAW_MATERIAL_MANUFACTURING">🏭 Raw Material &amp; Batch QA</option>
                       <option value="CLOUD_KITCHEN_DISPATCH">🛵 Cloud Kitchen Dispatch</option>
-                      <option value="CAFE_BAKERY">☕ Cafe, Bakery & Roastery</option>
-                      <option value="FSSAI_COMPLIANCE">🇮🇳 FSSAI Schedule 4 & Oil TPC</option>
+                      <option value="CAFE_BAKERY">☕ Cafe, Bakery &amp; Roastery</option>
+                      <option value="FSSAI_COMPLIANCE">🇮🇳 FSSAI Schedule 4 &amp; Oil TPC</option>
                       <option value="MAINTENANCE">🗓️ Periodic Maintenance</option>
                       <option value="CUSTOM">✨ Custom Category Name...</option>
                     </select>
-                  </div>
-
-                  <div className="form-group">
-                    <label>Icon Emoji</label>
-                    <input
-                      type="text"
-                      value={icon}
-                      onChange={(e) => setIcon(e.target.value)}
-                      placeholder="e.g. 🥐"
-                      className="form-input"
-                    />
                   </div>
 
                   <div className="form-group">
@@ -1074,6 +1076,7 @@ export default function TemplateManagerClient({
                       value={frequency}
                       onChange={(e) => setFrequency(e.target.value)}
                       className="form-select"
+                      style={{ minHeight: "38px" }}
                     >
                       <option value="SHIFT_WISE">Shift-Wise (Morning, Evening, etc.)</option>
                       <option value="DAILY">Daily (Once per day)</option>
@@ -1083,8 +1086,36 @@ export default function TemplateManagerClient({
                   </div>
                 </div>
 
-                {category === "CUSTOM" && (
+                <div className="form-row-2" style={{ marginTop: "0.6rem" }}>
                   <div className="form-group">
+                    <label>URL Slug *</label>
+                    <input
+                      type="text"
+                      required
+                      value={slug}
+                      onChange={(e) => setSlug(e.target.value)}
+                      placeholder="e.g. daily-housekeeping-sop"
+                      className="form-input"
+                      disabled={!!editingTemplate}
+                      style={{ fontSize: "0.85rem", color: "#4B5563", minHeight: "38px" }}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>Description (Optional)</label>
+                    <input
+                      type="text"
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      placeholder="Instructions for operators and supervisors..."
+                      className="form-input"
+                      style={{ fontSize: "0.85rem", minHeight: "38px" }}
+                    />
+                  </div>
+                </div>
+
+                {category === "CUSTOM" && (
+                  <div className="form-group" style={{ marginTop: "0.6rem" }}>
                     <label>Custom Category Name *</label>
                     <input
                       type="text"
@@ -1093,50 +1124,46 @@ export default function TemplateManagerClient({
                       onChange={(e) => setCustomCategory(e.target.value)}
                       placeholder="e.g. OIL_FRYER_LOG, ALLERGEN_AUDIT, PERSONAL_HYGIENE"
                       className="form-input"
+                      style={{ minHeight: "38px" }}
                     />
                   </div>
                 )}
 
-                <div className="form-group">
-                  <label>Description</label>
-                  <input
-                    type="text"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Instructions for operators and supervisors..."
-                    className="form-input"
-                  />
-                </div>
-
                 {/* Shift Configuration if SHIFT_WISE */}
                 {frequency === "SHIFT_WISE" && (
-                  <div className="form-group shift-config-box">
+                  <div className="form-group shift-config-box" style={{ marginTop: "1rem" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.4rem" }}>
-                      <label style={{ margin: 0 }}>Operational Shifts ({shifts.length} assigned)</label>
-                      <span className="field-hint" style={{ margin: 0 }}>Select which shifts require this log</span>
+                      <label style={{ margin: 0, fontWeight: 700, fontSize: "0.82rem", color: "#111827" }}>
+                        Required Operational Shifts ({shifts.length} active)
+                      </label>
+                      <span className="field-hint" style={{ margin: 0 }}>Select shifts that must log this SOP</span>
                     </div>
 
-                    <div className="shift-tags-row" style={{ marginBottom: "0.6rem" }}>
-                      {availableShiftsPool.map((s) => (
-                        <label key={s} className="shift-tag-label">
-                          <input
-                            type="checkbox"
-                            checked={shifts.includes(s)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setShifts([...shifts, s]);
-                              } else {
+                    <div className="shift-tags-row">
+                      {availableShiftsPool.map((s) => {
+                        const isChecked = shifts.includes(s);
+                        return (
+                          <button
+                            key={s}
+                            type="button"
+                            onClick={() => {
+                              if (isChecked) {
                                 setShifts(shifts.filter((x) => x !== s));
+                              } else {
+                                setShifts([...shifts, s]);
                               }
                             }}
-                          />
-                          <span>{s} Shift</span>
-                        </label>
-                      ))}
+                            className={`shift-pill-btn ${isChecked ? "active" : ""}`}
+                          >
+                            <span>{isChecked ? "✓" : "+"}</span>
+                            <span>{s} Shift</span>
+                          </button>
+                        );
+                      })}
                     </div>
 
                     {/* Add Custom Shift to Template */}
-                    <div style={{ display: "flex", gap: "0.5rem" }}>
+                    <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.75rem" }}>
                       <input
                         type="text"
                         value={customShiftInput}
@@ -1147,15 +1174,15 @@ export default function TemplateManagerClient({
                             handleAddCustomShift();
                           }
                         }}
-                        placeholder="Add custom shift to this report tab (e.g. Closing, Late Night)..."
+                        placeholder="Add custom shift (e.g. Closing, Late Night)..."
                         className="form-input"
-                        style={{ flex: 1, fontSize: "0.82rem" }}
+                        style={{ flex: 1, fontSize: "0.82rem", minHeight: "34px" }}
                       />
                       <button
                         type="button"
                         onClick={handleAddCustomShift}
                         className="btn-add-item-small"
-                        style={{ padding: "0.35rem 0.75rem" }}
+                        style={{ padding: "0.35rem 0.85rem" }}
                       >
                         ➕ Add Shift
                       </button>
@@ -1239,62 +1266,74 @@ export default function TemplateManagerClient({
 
                         <div className="builder-items-list">
                           {sec.items.map((item, itemIdx) => (
-                            <div key={item.id || itemIdx} className="builder-item-row">
-                              <span className="item-index">{itemIdx + 1}</span>
+                            <div key={item.id || itemIdx} className="builder-item-card">
+                              <div className="builder-item-main-row">
+                                <span className="item-index">{itemIdx + 1}</span>
 
-                              <div className="item-input-main">
-                                <input
-                                  type="text"
-                                  value={item.name}
-                                  onChange={(e) =>
-                                    handleUpdateItem(secIdx, itemIdx, "name", e.target.value)
-                                  }
-                                  placeholder="Item / Equipment / Zone Name"
-                                  className="form-input item-name-field"
-                                />
-                              </div>
+                                <div className="item-input-main">
+                                  <input
+                                    type="text"
+                                    value={item.name}
+                                    onChange={(e) =>
+                                      handleUpdateItem(secIdx, itemIdx, "name", e.target.value)
+                                    }
+                                    placeholder="Checkpoint / Equipment / Task Name"
+                                    className="item-name-field"
+                                  />
+                                </div>
 
-                              {/* Item Type Selector */}
-                              <div style={{ width: "135px", flexShrink: 0 }}>
-                                <select
-                                  value={item.itemType || (category === "TEMPERATURE" ? "TEMPERATURE" : "STATUS")}
-                                  onChange={(e) =>
-                                    handleUpdateItem(secIdx, itemIdx, "itemType", e.target.value as ItemInputType)
-                                  }
-                                  className="form-select item-select"
-                                  style={{ fontWeight: 600, fontSize: "0.74rem" }}
-                                  title="Checkpoint Input Type"
+                                {/* Item Type Selector */}
+                                <div className="item-type-col">
+                                  <select
+                                    value={item.itemType || (category === "TEMPERATURE" ? "TEMPERATURE" : "STATUS")}
+                                    onChange={(e) =>
+                                      handleUpdateItem(secIdx, itemIdx, "itemType", e.target.value as ItemInputType)
+                                    }
+                                    className="item-select"
+                                    title="Checkpoint Input Type"
+                                  >
+                                    <option value="STATUS">✓/✕ Pass / Fail</option>
+                                    <option value="TEMPERATURE">🧊 Temperature</option>
+                                    <option value="NUMERIC">🔢 Numeric / PPM</option>
+                                    <option value="CLEAN_DIRTY">🧼 Clean / Action</option>
+                                    <option value="TEXT">📝 Text / Notes</option>
+                                    <option value="TIME">🕒 Time Verification</option>
+                                  </select>
+                                </div>
+
+                                {/* Assignee */}
+                                <div className="item-assignee-col">
+                                  <select
+                                    value={item.defaultAssignee || DEFAULT_STAFF[0]}
+                                    onChange={(e) =>
+                                      handleUpdateItem(secIdx, itemIdx, "defaultAssignee", e.target.value)
+                                    }
+                                    className="item-select"
+                                  >
+                                    {DEFAULT_STAFF.map((st) => (
+                                      <option key={st} value={st}>
+                                        {st}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+
+                                {/* Delete Item */}
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteItem(secIdx, itemIdx)}
+                                  className="btn-delete-item"
+                                  title="Remove checkpoint"
                                 >
-                                  <option value="STATUS">✓/✕ Pass / Fail</option>
-                                  <option value="TEMPERATURE">🧊 Temperature</option>
-                                  <option value="NUMERIC">🔢 Numeric / PPM</option>
-                                  <option value="CLEAN_DIRTY">🧼 Clean / Needs Action</option>
-                                  <option value="TEXT">📝 Text / Notes</option>
-                                  <option value="TIME">🕒 Time Verification</option>
-                                </select>
-                              </div>
-
-                              {/* Assignee */}
-                              <div className="item-assignee-col">
-                                <select
-                                  value={item.defaultAssignee || DEFAULT_STAFF[0]}
-                                  onChange={(e) =>
-                                    handleUpdateItem(secIdx, itemIdx, "defaultAssignee", e.target.value)
-                                  }
-                                  className="form-select item-select"
-                                >
-                                  {DEFAULT_STAFF.map((st) => (
-                                    <option key={st} value={st}>
-                                      {st}
-                                    </option>
-                                  ))}
-                                </select>
+                                  ✕
+                                </button>
                               </div>
 
                               {/* Temperature Specific Columns */}
                               {(item.itemType === "TEMPERATURE" || (!item.itemType && category === "TEMPERATURE")) && (
-                                <>
-                                  <div className="item-temp-col">
+                                <div className="builder-item-extra-row">
+                                  <span className="extra-row-label">Safe Range:</span>
+                                  <div className="temp-range-inputs">
                                     <input
                                       type="number"
                                       step="0.1"
@@ -1307,8 +1346,8 @@ export default function TemplateManagerClient({
                                           parseFloat(e.target.value)
                                         )
                                       }
-                                      placeholder="Min °C"
-                                      className="form-input temp-num-input"
+                                      placeholder="Min"
+                                      className="temp-num-input"
                                       title="Minimum Safe Temperature (°C)"
                                     />
                                     <span className="temp-to">to</span>
@@ -1324,12 +1363,15 @@ export default function TemplateManagerClient({
                                           parseFloat(e.target.value)
                                         )
                                       }
-                                      placeholder="Max °C"
-                                      className="form-input temp-num-input"
+                                      placeholder="Max"
+                                      className="temp-num-input"
                                       title="Maximum Safe Temperature (°C)"
                                     />
+                                    <span className="temp-unit">°C</span>
                                   </div>
-                                  <div className="item-unit-col">
+
+                                  <div className="unit-number-wrap">
+                                    <span className="extra-row-label">Unit #:</span>
                                     <input
                                       type="text"
                                       value={item.machineNumber || `${itemIdx + 1}`}
@@ -1342,88 +1384,67 @@ export default function TemplateManagerClient({
                                         )
                                       }
                                       placeholder="Unit #"
-                                      className="form-input unit-num-input"
+                                      className="unit-num-input"
                                       title="Machine / Unit Number"
                                     />
                                   </div>
-                                </>
+                                </div>
                               )}
 
                               {/* Numeric / Chemical Specific Columns */}
                               {item.itemType === "NUMERIC" && (
-                                <div style={{ display: "flex", gap: "0.3rem", alignItems: "center", flexShrink: 0 }}>
-                                  <input
-                                    type="number"
-                                    value={item.targetValue ?? 200}
-                                    onChange={(e) =>
-                                      handleUpdateItem(secIdx, itemIdx, "targetValue", parseFloat(e.target.value))
-                                    }
-                                    placeholder="Target"
-                                    className="form-input temp-num-input"
-                                    title="Target Value (e.g. 200)"
-                                  />
-                                  <input
-                                    type="text"
-                                    value={item.unitLabel || "PPM"}
-                                    onChange={(e) =>
-                                      handleUpdateItem(secIdx, itemIdx, "unitLabel", e.target.value)
-                                    }
-                                    placeholder="Unit (PPM, %)"
-                                    className="form-input unit-num-input"
-                                    style={{ width: "60px" }}
-                                    title="Unit Label"
-                                  />
-                                  <input
-                                    type="number"
-                                    value={item.minAllowed ?? 150}
-                                    onChange={(e) =>
-                                      handleUpdateItem(secIdx, itemIdx, "minAllowed", parseFloat(e.target.value))
-                                    }
-                                    placeholder="Min"
-                                    className="form-input temp-num-input"
-                                    style={{ width: "50px" }}
-                                    title="Min Acceptable"
-                                  />
-                                  <span className="temp-to">-</span>
-                                  <input
-                                    type="number"
-                                    value={item.maxAllowed ?? 400}
-                                    onChange={(e) =>
-                                      handleUpdateItem(secIdx, itemIdx, "maxAllowed", parseFloat(e.target.value))
-                                    }
-                                    placeholder="Max"
-                                    className="form-input temp-num-input"
-                                    style={{ width: "50px" }}
-                                    title="Max Acceptable"
-                                  />
+                                <div className="builder-item-extra-row">
+                                  <span className="extra-row-label">Tolerance:</span>
+                                  <div className="temp-range-inputs">
+                                    <input
+                                      type="number"
+                                      value={item.minAllowed ?? 150}
+                                      onChange={(e) =>
+                                        handleUpdateItem(secIdx, itemIdx, "minAllowed", parseFloat(e.target.value))
+                                      }
+                                      placeholder="Min"
+                                      className="temp-num-input"
+                                    />
+                                    <span className="temp-to">to</span>
+                                    <input
+                                      type="number"
+                                      value={item.maxAllowed ?? 400}
+                                      onChange={(e) =>
+                                        handleUpdateItem(secIdx, itemIdx, "maxAllowed", parseFloat(e.target.value))
+                                      }
+                                      placeholder="Max"
+                                      className="temp-num-input"
+                                    />
+                                    <input
+                                      type="text"
+                                      value={item.unitLabel || "PPM"}
+                                      onChange={(e) =>
+                                        handleUpdateItem(secIdx, itemIdx, "unitLabel", e.target.value)
+                                      }
+                                      placeholder="Unit"
+                                      className="unit-num-input"
+                                      style={{ width: "55px" }}
+                                    />
+                                  </div>
                                 </div>
                               )}
 
                               {/* Text Specific Columns */}
                               {item.itemType === "TEXT" && (
-                                <div style={{ width: "120px", flexShrink: 0 }}>
+                                <div className="builder-item-extra-row">
+                                  <span className="extra-row-label">Field Hint:</span>
                                   <input
                                     type="text"
                                     value={item.placeholder || ""}
                                     onChange={(e) =>
                                       handleUpdateItem(secIdx, itemIdx, "placeholder", e.target.value)
                                     }
-                                    placeholder="Placeholder..."
-                                    className="form-input item-select"
-                                    title="Field Hint"
+                                    placeholder="e.g. Enter lot / serial number..."
+                                    className="item-name-field"
+                                    style={{ flex: 1, minHeight: "30px" }}
                                   />
                                 </div>
                               )}
-
-                              {/* Delete Item */}
-                              <button
-                                type="button"
-                                onClick={() => handleDeleteItem(secIdx, itemIdx)}
-                                className="btn-delete-item"
-                                title="Remove checkpoint"
-                              >
-                                ✕
-                              </button>
                             </div>
                           ))}
                         </div>
@@ -1549,24 +1570,28 @@ export default function TemplateManagerClient({
                 </div>
 
                 <div className="outlet-checkboxes-grid">
-                  {outlets.map((o) => (
-                    <label key={o.id} className="outlet-checkbox-item">
-                      <input
-                        type="checkbox"
-                        checked={selectedOutlets.includes(o.id)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedOutlets([...selectedOutlets, o.id]);
-                          } else {
-                            setSelectedOutlets(selectedOutlets.filter((id) => id !== o.id));
-                          }
-                        }}
-                      />
-                      <span>
-                        {o.icon} {o.name}
-                      </span>
-                    </label>
-                  ))}
+                  {outlets.map((o) => {
+                    const isSelected = selectedOutlets.includes(o.id);
+                    return (
+                      <label key={o.id} className={`outlet-checkbox-card ${isSelected ? "selected" : ""}`}>
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedOutlets([...selectedOutlets, o.id]);
+                            } else {
+                              setSelectedOutlets(selectedOutlets.filter((id) => id !== o.id));
+                            }
+                          }}
+                          style={{ accentColor: "#059669", width: "16px", height: "16px" }}
+                        />
+                        <span>
+                          {o.icon} {o.name}
+                        </span>
+                      </label>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -1584,7 +1609,7 @@ export default function TemplateManagerClient({
                       type="checkbox"
                       checked={isArchived}
                       onChange={(e) => setIsArchived(e.target.checked)}
-                      style={{ width: "18px", height: "18px" }}
+                      style={{ width: "18px", height: "18px", accentColor: "#ea580c" }}
                     />
                     <span>📦 Archive this Report Tab</span>
                   </label>
@@ -1603,6 +1628,10 @@ export default function TemplateManagerClient({
                 >
                   Cancel
                 </button>
+                <div className="modal-summary-pill">
+                  <span>📋</span>
+                  <span>{sections.reduce((acc, s) => acc + s.items.length, 0)} Checkpoints • {sections.length} Section{sections.length === 1 ? "" : "s"}</span>
+                </div>
                 <button
                   type="submit"
                   disabled={saving}
