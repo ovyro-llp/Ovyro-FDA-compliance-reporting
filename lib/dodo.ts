@@ -56,6 +56,23 @@ export interface CreateCheckoutParams {
  * Creates a real Dodo Payments checkout session for a SaaS tenant organization.
  * This is the ONLY gateway used to collect payments.
  */
+function formatE164Phone(phone?: string | null): string | undefined {
+  if (!phone) return undefined;
+  const cleaned = phone.replace(/[\s\-\(\)\.]/g, "");
+  if (!cleaned) return undefined;
+
+  if (/^\+[1-9]\d{9,14}$/.test(cleaned)) {
+    return cleaned;
+  }
+  if (/^\d{10}$/.test(cleaned)) {
+    return `+91${cleaned}`;
+  }
+  if (/^91\d{10}$/.test(cleaned)) {
+    return `+${cleaned}`;
+  }
+  return undefined;
+}
+
 export async function createDodoCheckoutSession({
   organizationId,
   planInterval = "MONTHLY",
@@ -69,6 +86,15 @@ export async function createDodoCheckoutSession({
 
   const defaultReturn = `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/admin/platform?payment_status=success&session_id={CHECKOUT_SESSION_ID}&org=${organizationId}`;
 
+  const safePhone = formatE164Phone(customerPhone);
+  const customerData: { email: string; name: string; phone_number?: string } = {
+    email: customerEmail.trim().toLowerCase(),
+    name: customerName.trim() || "Valued Customer",
+  };
+  if (safePhone) {
+    customerData.phone_number = safePhone;
+  }
+
   const session = await client.checkoutSessions.create({
     product_cart: [
       {
@@ -76,11 +102,7 @@ export async function createDodoCheckoutSession({
         quantity: 1,
       },
     ],
-    customer: {
-      email: customerEmail.trim().toLowerCase(),
-      name: customerName.trim(),
-      phone_number: customerPhone?.trim() || null,
-    },
+    customer: customerData,
     return_url: returnUrl || defaultReturn,
     metadata: {
       organizationId,

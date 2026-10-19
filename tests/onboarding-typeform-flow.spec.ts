@@ -43,6 +43,13 @@ test.describe("Apple HIG & Typeform Single-Question Onboarding Flow", () => {
     await page.waitForTimeout(350);
     await page.screenshot({ path: "playwright-screenshots/onboard-initial-q5-desktop.png" });
 
+    // Test clicking Proceed to Payment via Dodo
+    const checkoutBtn = page.locator('button:has-text("Proceed to Payment via Dodo →")');
+    await checkoutBtn.click();
+    await page.waitForTimeout(1500);
+    // Ensure no 400 error banner appears
+    await expect(page.locator("text=customer.phone_number: is invalid")).not.toBeVisible();
+
     // 3. Post-Payment Setup Wizard (/onboard/setup) - Desktop
     await page.goto("http://localhost:3000/onboard/setup?session_id=mock_dodo_session_123");
     await page.waitForSelector(".onboard-anim-title");
@@ -63,17 +70,11 @@ test.describe("Apple HIG & Typeform Single-Question Onboarding Flow", () => {
     await page.waitForTimeout(350);
     await page.screenshot({ path: "playwright-screenshots/onboard-setup-step2-templates-desktop.png" });
 
-    // Advance to Step 3: Assign Staff View
-    await page.click('button:has-text("Continue to Staff Assignment →")');
-    await expect(page.locator("text=Assign staff to report items")).toBeVisible();
-    await page.waitForTimeout(350);
-    await page.screenshot({ path: "playwright-screenshots/onboard-setup-step3-assign-desktop.png" });
-
-    // Finish Setup -> Step 4
+    // Finish Setup & Launch -> Celebration
     await page.click('button:has-text("Finish Setup & Launch 🚀")');
     await expect(page.locator("text=Your business is ready for compliance!")).toBeVisible();
     await page.waitForTimeout(350);
-    await page.screenshot({ path: "playwright-screenshots/onboard-setup-step4-celebration-desktop.png" });
+    await page.screenshot({ path: "playwright-screenshots/onboard-setup-step3-celebration-desktop.png" });
 
     // 4. Mobile Viewport (375x812)
     await page.setViewportSize({ width: 375, height: 812 });

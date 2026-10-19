@@ -10,19 +10,6 @@ interface StaffMember {
   isRegistered?: boolean;
 }
 
-interface TemplateItem {
-  id: string;
-  name: string;
-  itemType?: string;
-  defaultAssignee?: string;
-}
-
-interface TemplateSection {
-  id: string;
-  title: string;
-  items: TemplateItem[];
-}
-
 interface TemplateRecord {
   id: string;
   slug: string;
@@ -32,7 +19,7 @@ interface TemplateRecord {
   description: string | null;
   frequency: string;
   schema: {
-    sections?: TemplateSection[];
+    sections?: any[];
     [key: string]: any;
   };
 }
@@ -160,9 +147,8 @@ export default function SetupWizardClient({
 }: SetupWizardProps) {
   const router = useRouter();
 
-  // Wizard Steps: 1 = Add Staff, 2 = Select Templates, 3 = Assign Staff Dropdown, 4 = Complete
+  // Wizard Steps: 1 = Add Staff, 2 = Select Templates, 3 = Launch Ready (Celebration)
   const [step, setStep] = useState<number>(1);
-  const [paymentSynced, setPaymentSynced] = useState<boolean>(false);
   const [saving, setSaving] = useState<boolean>(false);
   const [toast, setToast] = useState<{ type: "success" | "error"; msg: string } | null>(null);
 
@@ -175,9 +161,6 @@ export default function SetupWizardClient({
   const [templates, setTemplates] = useState<TemplateRecord[]>(initialTemplates);
   const [selectedPresets, setSelectedPresets] = useState<string[]>(["Daily Housekeeping & Hygiene SOP"]);
   const [customTemplateTitle, setCustomTemplateTitle] = useState("");
-
-  // Step 3: Active template for assigning staff
-  const [activeTemplateIndex, setActiveTemplateIndex] = useState(0);
 
   // Auto-dismiss toast notification
   useEffect(() => {
@@ -193,22 +176,9 @@ export default function SetupWizardClient({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sessionId, organizationId: organization.id }),
-      })
-        .then((res) => res.json())
-        .then(() => setPaymentSynced(true))
-        .catch(() => setPaymentSynced(true));
+      }).catch(() => {});
     }
   }, [sessionId, organization.id]);
-
-  // Combined staff names for dropdown
-  const allStaffNames = React.useMemo(() => {
-    const list = [
-      currentUser.name,
-      ...staffList.map((s) => s.name),
-      "General Staff",
-    ];
-    return Array.from(new Set(list.filter(Boolean)));
-  }, [currentUser.name, staffList]);
 
   // Add staff handler
   const handleAddStaff = async (nameToAdd?: string, roleToAdd?: string) => {
@@ -240,7 +210,7 @@ export default function SetupWizardClient({
       });
       if (!res.ok) throw new Error("Failed to save staff member");
     } catch {
-      // optimistic state retained, toast subtle info
+      // optimistic state retained
     }
   };
 
@@ -262,8 +232,8 @@ export default function SetupWizardClient({
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // Step 2 -> Step 3: Create any selected preset templates not already created
-  const handleProceedToAssignStaff = async () => {
+  // Step 2 -> Step 3 (Celebration / Complete): Save templates & launch
+  const handleSaveChecklistsAndComplete = async () => {
     setSaving(true);
     try {
       const outletId = initialOutlets[0]?.id;
@@ -314,8 +284,8 @@ export default function SetupWizardClient({
                   id: "sec-1",
                   title: "General Checkpoints",
                   items: [
-                    { id: "item-1", name: "Operational Area Hygiene Check", defaultAssignee: allStaffNames[0] || "Staff Member" },
-                    { id: "item-2", name: "Equipment Sanitization & Calibration", defaultAssignee: allStaffNames[1] || "Shift Supervisor" },
+                    { id: "item-1", name: "Operational Area Hygiene Check", defaultAssignee: "Staff Member" },
+                    { id: "item-2", name: "Equipment Sanitization & Calibration", defaultAssignee: "Shift Supervisor" },
                   ],
                 },
               ],
@@ -332,83 +302,16 @@ export default function SetupWizardClient({
       }
 
       setTemplates(createdList);
-      setStep(3);
+      setStep(3); // Directly advance to Celebration
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err: any) {
-      setToast({ type: "error", msg: err.message || "Failed to configure templates" });
+      setToast({ type: "error", msg: err.message || "Failed to configure checklists" });
     } finally {
       setSaving(false);
     }
   };
 
-  // Step 3: Update default assignee for an item
-  const handleAssignItemStaff = (templateId: string, sectionIdx: number, itemIdx: number, staffName: string) => {
-    setTemplates((prev) =>
-      prev.map((tmpl) => {
-        if (tmpl.id !== templateId) return tmpl;
-        const newSchema = { ...tmpl.schema };
-        const sections = [...(newSchema.sections || [])];
-        if (sections[sectionIdx]) {
-          const items = [...(sections[sectionIdx].items || [])];
-          if (items[itemIdx]) {
-            items[itemIdx] = { ...items[itemIdx], defaultAssignee: staffName };
-            sections[sectionIdx] = { ...sections[sectionIdx], items };
-            newSchema.sections = sections;
-          }
-        }
-        return { ...tmpl, schema: newSchema };
-      })
-    );
-  };
-
-  // Bulk assign all items in a section
-  const handleBulkAssignSection = (templateId: string, sectionIdx: number, staffName: string) => {
-    setTemplates((prev) =>
-      prev.map((tmpl) => {
-        if (tmpl.id !== templateId) return tmpl;
-        const newSchema = { ...tmpl.schema };
-        const sections = [...(newSchema.sections || [])];
-        if (sections[sectionIdx]) {
-          const items = (sections[sectionIdx].items || []).map((it) => ({
-            ...it,
-            defaultAssignee: staffName,
-          }));
-          sections[sectionIdx] = { ...sections[sectionIdx], items };
-          newSchema.sections = sections;
-        }
-        return { ...tmpl, schema: newSchema };
-      })
-    );
-  };
-
-  // Step 3 -> Step 4: Persist updated template schemas and complete setup
-  const handleSaveAssignmentsAndFinish = async () => {
-    setSaving(true);
-    try {
-      for (const tmpl of templates) {
-        await fetch(`/api/admin/templates/${tmpl.id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            title: tmpl.title,
-            category: tmpl.category,
-            icon: tmpl.icon,
-            frequency: tmpl.frequency,
-            schema: tmpl.schema,
-          }),
-        });
-      }
-      setStep(4);
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    } catch (err: any) {
-      setToast({ type: "error", msg: err.message || "Failed to save assignments" });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const progressPercentage = step === 1 ? 25 : step === 2 ? 55 : step === 3 ? 85 : 100;
-  const currentTemplate = templates[activeTemplateIndex] || templates[0];
+  const progressPercentage = step === 1 ? 50 : 100;
 
   return (
     <div className="onboard-wizard-wrapper">
@@ -421,10 +324,9 @@ export default function SetupWizardClient({
           <div>
             <div style={{ fontSize: "14px", fontWeight: "600", color: "#111111" }}>{organization.name}</div>
             <div style={{ fontSize: "11px", color: "#777774" }}>
-              {step === 1 && "Step 1 of 3: Add Your Team"}
-              {step === 2 && "Step 2 of 3: Select Checklists"}
-              {step === 3 && "Step 3 of 3: Assign Staff"}
-              {step === 4 && "Setup Complete"}
+              {step === 1 && "Step 1 of 2: Add Your Team"}
+              {step === 2 && "Step 2 of 2: Select Checklists"}
+              {step === 3 && "Setup Complete"}
             </div>
           </div>
         </div>
@@ -537,7 +439,6 @@ export default function SetupWizardClient({
                   Active Team Members ({staffList.length + 1}):
                 </div>
                 <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", minHeight: "40px" }}>
-                  {/* Current Admin Tag */}
                   <span className="onboard-staff-pill" style={{ background: "#EBF3FE", borderColor: "#C7DCFD" }}>
                     <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#2563EB" }} />
                     {currentUser.name} (Admin / Owner)
@@ -584,7 +485,7 @@ export default function SetupWizardClient({
           <div key="step-2" style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
             <h1 className="onboard-anim-title">Which compliance checklists do you need?</h1>
             <p className="onboard-anim-sub">
-              Select the reporting templates relevant to your operation. You can customize them or assign staff in the next step.
+              Select the reporting templates relevant to your operation. They will be immediately activated for your daily audits.
             </p>
 
             <div className="onboard-anim-card">
@@ -631,7 +532,7 @@ export default function SetupWizardClient({
                 </div>
                 <input
                   type="text"
-                  placeholder="e.g. End of Day Bakery Closing & Sanitization..."
+                  placeholder="e.g. End of Day Kitchen Closing SOP..."
                   value={customTemplateTitle}
                   onChange={(e) => setCustomTemplateTitle(e.target.value)}
                   style={{ width: "100%", height: "44px", padding: "0 14px", border: "1.5px solid #DCD9D2", borderRadius: "8px", fontSize: "14.5px", outline: "none", background: "#FFFFFF", color: "#111111", boxSizing: "border-box" }}
@@ -649,185 +550,26 @@ export default function SetupWizardClient({
                 </button>
                 <button
                   type="button"
-                  onClick={handleProceedToAssignStaff}
+                  onClick={handleSaveChecklistsAndComplete}
                   disabled={saving || (selectedPresets.length === 0 && !customTemplateTitle.trim() && templates.length === 0)}
                   className="onboard-primary-btn"
                 >
-                  {saving ? "Setting up Checklists..." : "Continue to Staff Assignment →"}
+                  {saving ? "Setting up Checklists..." : "Finish Setup & Launch 🚀"}
                 </button>
               </div>
             </div>
           </div>
         )}
 
-        {/* STEP 3: EDIT ASSIGN STAFF VIEW */}
+        {/* STEP 3: CELEBRATION / LAUNCH READY */}
         {step === 3 && (
           <div key="step-3" style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
-            <h1 className="onboard-anim-title">Assign staff to report items</h1>
-            <p className="onboard-anim-sub">
-              Choose which team member is responsible for each checklist item. In daily reporting, their name will appear in the assignee dropdown.
-            </p>
-
-            <div className="onboard-anim-card" style={{ maxWidth: "820px" }}>
-              {/* Template Tab Switcher if multiple templates */}
-              {templates.length > 1 && (
-                <div style={{ display: "flex", gap: "8px", overflowX: "auto", paddingBottom: "12px", marginBottom: "16px", borderBottom: "1px solid #ECEAE5" }}>
-                  {templates.map((tmpl, idx) => (
-                    <button
-                      key={tmpl.id}
-                      type="button"
-                      onClick={() => setActiveTemplateIndex(idx)}
-                      style={{
-                        padding: "8px 14px",
-                        borderRadius: "8px",
-                        border: "1px solid",
-                        borderColor: activeTemplateIndex === idx ? "#111111" : "#E2E0D8",
-                        background: activeTemplateIndex === idx ? "#111111" : "#FFFFFF",
-                        color: activeTemplateIndex === idx ? "#FFFFFF" : "#444442",
-                        fontSize: "13px",
-                        fontWeight: "600",
-                        cursor: "pointer",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "6px",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      <span>{tmpl.icon || "📋"}</span>
-                      <span>{tmpl.title}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {/* Template Sections & Checkpoint Assignment Rows */}
-              {currentTemplate && (
-                <div>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-                    <div>
-                      <div style={{ fontSize: "16px", fontWeight: "700", color: "#111111" }}>
-                        {currentTemplate.icon} {currentTemplate.title}
-                      </div>
-                      <div style={{ fontSize: "12px", color: "#777774" }}>
-                        Configure default assignees from your registered team members
-                      </div>
-                    </div>
-                  </div>
-
-                  {(!currentTemplate.schema.sections || currentTemplate.schema.sections.length === 0) ? (
-                    <div style={{ padding: "24px", textAlign: "center", color: "#777774", fontSize: "14px", background: "#FBFBFA", borderRadius: "8px" }}>
-                      This template has no checklist items defined yet. You can add items later in Template Manager.
-                    </div>
-                  ) : (
-                    currentTemplate.schema.sections.map((section, secIdx) => (
-                      <div key={section.id || secIdx} style={{ marginBottom: "20px", border: "1px solid #EBE9E4", borderRadius: "10px", overflow: "hidden" }}>
-                        {/* Section Header with Bulk Assign Tool */}
-                        <div style={{ background: "#F7F6F2", padding: "10px 16px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "8px", borderBottom: "1px solid #EBE9E4" }}>
-                          <span style={{ fontSize: "13.5px", fontWeight: "600", color: "#222220" }}>
-                            {section.title} ({section.items?.length || 0} items)
-                          </span>
-                          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                            <span style={{ fontSize: "11.5px", color: "#666662" }}>Assign all in section to:</span>
-                            <select
-                              onChange={(e) => {
-                                if (e.target.value) {
-                                  handleBulkAssignSection(currentTemplate.id, secIdx, e.target.value);
-                                }
-                              }}
-                              defaultValue=""
-                              style={{ height: "30px", fontSize: "12px", borderRadius: "6px", border: "1px solid #CBC8C0", background: "#FFFFFF", color: "#111111", padding: "0 6px" }}
-                            >
-                              <option value="" disabled>Select staff...</option>
-                              {allStaffNames.map((name) => (
-                                <option key={name} value={name}>{name}</option>
-                              ))}
-                            </select>
-                          </div>
-                        </div>
-
-                        {/* Items Table */}
-                        <div style={{ padding: "8px 16px" }}>
-                          {(section.items || []).map((item, itemIdx) => (
-                            <div
-                              key={item.id || itemIdx}
-                              style={{
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "space-between",
-                                padding: "10px 0",
-                                borderBottom: itemIdx === section.items.length - 1 ? "none" : "1px solid #F2F1EC",
-                                gap: "12px",
-                              }}
-                            >
-                              <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ fontSize: "14px", fontWeight: "500", color: "#1F1F1E" }}>
-                                  {item.name}
-                                </div>
-                              </div>
-                              <div style={{ flex: "0 0 200px" }}>
-                                <select
-                                  value={item.defaultAssignee || allStaffNames[0]}
-                                  onChange={(e) => handleAssignItemStaff(currentTemplate.id, secIdx, itemIdx, e.target.value)}
-                                  style={{
-                                    width: "100%",
-                                    height: "36px",
-                                    padding: "0 10px",
-                                    border: "1.5px solid #D2CFC7",
-                                    borderRadius: "6px",
-                                    fontSize: "13px",
-                                    fontWeight: "500",
-                                    background: "#FFFFFF",
-                                    color: "#111111",
-                                    outline: "none",
-                                  }}
-                                >
-                                  {allStaffNames.map((staff) => (
-                                    <option key={staff} value={staff}>
-                                      {staff}
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              )}
-
-              {/* Actions Footer */}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid #ECEAE5", paddingTop: "20px", marginTop: "12px" }}>
-                <button
-                  type="button"
-                  onClick={() => setStep(2)}
-                  className="onboard-secondary-btn"
-                >
-                  ← Back to Checklists
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSaveAssignmentsAndFinish}
-                  disabled={saving}
-                  className="onboard-primary-btn"
-                >
-                  {saving ? "Saving Assignments..." : "Finish Setup & Launch 🚀"}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* STEP 4: LAUNCH READY / CELEBRATION */}
-        {step === 4 && (
-          <div key="step-4" style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
             <div style={{ width: "56px", height: "56px", borderRadius: "50%", background: "#ECFDF5", border: "1.5px solid #10B981", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "28px", marginBottom: "16px" }}>
               🎉
             </div>
             <h1 className="onboard-anim-title">Your business is ready for compliance!</h1>
             <p className="onboard-anim-sub">
-              Your staff members are linked and ready to record audits. Every daily submission will automatically log assignees and timestamps.
+              Your team and checklists are linked. You can log daily shift audits, record temperatures, and track compliance scorecards immediately.
             </p>
 
             <div className="onboard-anim-card" style={{ textAlign: "center" }}>
