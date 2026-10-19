@@ -977,7 +977,7 @@ export default function TemplateManagerClient({
               </button>
             </div>
 
-            <form onSubmit={handleSave} className="modal-form">
+            <form id="template-editor-form" onSubmit={handleSave} className="modal-form-body">
               {error && <div className="form-error-banner">{error}</div>}
 
               {/* Quick Presets Bar (For New Templates) */}
@@ -1016,7 +1016,7 @@ export default function TemplateManagerClient({
                 </h3>
 
                 {/* Title & Icon Header Row */}
-                <div className="form-group" style={{ marginBottom: "1rem" }}>
+                <div className="form-group" style={{ marginBottom: "0.75rem" }}>
                   <label>Report Tab Title &amp; Icon *</label>
                   <div className="notion-title-icon-group">
                     <div className="notion-icon-input-wrap">
@@ -1040,8 +1040,7 @@ export default function TemplateManagerClient({
                         }
                       }}
                       placeholder="e.g. Daily Housekeeping & Area SOP"
-                      className="form-input"
-                      style={{ flex: 1, minHeight: "44px", fontSize: "0.95rem", fontWeight: 600 }}
+                      className="form-input template-input font-semibold"
                     />
                   </div>
                 </div>
@@ -1052,21 +1051,20 @@ export default function TemplateManagerClient({
                     <select
                       value={category}
                       onChange={(e) => setCategory(e.target.value)}
-                      className="form-select"
-                      style={{ minHeight: "38px" }}
+                      className="form-select template-select"
                     >
-                      <option value="HOUSEKEEPING">🧹 Housekeeping &amp; Area SOPs</option>
-                      <option value="TEMPERATURE">🧊 Temperature &amp; Cold Chain</option>
+                      <option value="HOUSEKEEPING">🧹 Housekeeping SOPs</option>
+                      <option value="TEMPERATURE">🧊 Cold Chain &amp; Refrig Temp</option>
                       <option value="EQUIPMENT">⚙️ Equipment Cleaning Log</option>
                       <option value="SAFETY_GLASS">🪟 Safety, Glass &amp; Pest</option>
-                      <option value="CHEMICAL">🧪 Chemical Sanitizer &amp; PPM</option>
-                      <option value="COOKING_HACCP">🍳 Cooking Core &amp; Hot Holding</option>
-                      <option value="RAW_MATERIAL_MANUFACTURING">🏭 Raw Material &amp; Batch QA</option>
+                      <option value="CHEMICAL">🧪 Sanitizer PPM &amp; Chemical</option>
+                      <option value="COOKING_HACCP">🍳 Cooking Core &amp; Hot Hold</option>
+                      <option value="RAW_MATERIAL_MANUFACTURING">🏭 Raw Materials &amp; Batch QA</option>
                       <option value="CLOUD_KITCHEN_DISPATCH">🛵 Cloud Kitchen Dispatch</option>
-                      <option value="CAFE_BAKERY">☕ Cafe, Bakery &amp; Roastery</option>
-                      <option value="FSSAI_COMPLIANCE">🇮🇳 FSSAI Schedule 4 &amp; Oil TPC</option>
+                      <option value="CAFE_BAKERY">☕ Cafe &amp; Bakery Equipment</option>
+                      <option value="FSSAI_COMPLIANCE">🇮🇳 FSSAI &amp; Cooking Oil TPC</option>
                       <option value="MAINTENANCE">🗓️ Periodic Maintenance</option>
-                      <option value="CUSTOM">✨ Custom Category Name...</option>
+                      <option value="CUSTOM">✨ Custom Report Tab</option>
                     </select>
                   </div>
 
@@ -1075,10 +1073,9 @@ export default function TemplateManagerClient({
                     <select
                       value={frequency}
                       onChange={(e) => setFrequency(e.target.value)}
-                      className="form-select"
-                      style={{ minHeight: "38px" }}
+                      className="form-select template-select"
                     >
-                      <option value="SHIFT_WISE">Shift-Wise (Morning, Evening, etc.)</option>
+                      <option value="SHIFT_WISE">Shift-Wise (Morning / Evening)</option>
                       <option value="DAILY">Daily (Once per day)</option>
                       <option value="WEEKLY">Weekly</option>
                       <option value="MONTHLY">Monthly</option>
@@ -1086,7 +1083,7 @@ export default function TemplateManagerClient({
                   </div>
                 </div>
 
-                <div className="form-row-2" style={{ marginTop: "0.6rem" }}>
+                <div className="form-row-2" style={{ marginTop: "0.5rem" }}>
                   <div className="form-group">
                     <label>URL Slug *</label>
                     <input
@@ -1095,9 +1092,8 @@ export default function TemplateManagerClient({
                       value={slug}
                       onChange={(e) => setSlug(e.target.value)}
                       placeholder="e.g. daily-housekeeping-sop"
-                      className="form-input"
+                      className="form-input template-input"
                       disabled={!!editingTemplate}
-                      style={{ fontSize: "0.85rem", color: "#4B5563", minHeight: "38px" }}
                     />
                   </div>
 
@@ -1108,35 +1104,33 @@ export default function TemplateManagerClient({
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
                       placeholder="Instructions for operators and supervisors..."
-                      className="form-input"
-                      style={{ fontSize: "0.85rem", minHeight: "38px" }}
+                      className="form-input template-input"
                     />
                   </div>
                 </div>
 
                 {category === "CUSTOM" && (
-                  <div className="form-group" style={{ marginTop: "0.6rem" }}>
+                  <div className="form-group" style={{ marginTop: "0.5rem" }}>
                     <label>Custom Category Name *</label>
                     <input
                       type="text"
                       required
                       value={customCategory}
                       onChange={(e) => setCustomCategory(e.target.value)}
-                      placeholder="e.g. OIL_FRYER_LOG, ALLERGEN_AUDIT, PERSONAL_HYGIENE"
-                      className="form-input"
-                      style={{ minHeight: "38px" }}
+                      placeholder="e.g. OIL_FRYER_LOG, ALLERGEN_AUDIT"
+                      className="form-input template-input"
                     />
                   </div>
                 )}
 
                 {/* Shift Configuration if SHIFT_WISE */}
                 {frequency === "SHIFT_WISE" && (
-                  <div className="form-group shift-config-box" style={{ marginTop: "1rem" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.4rem" }}>
-                      <label style={{ margin: 0, fontWeight: 700, fontSize: "0.82rem", color: "#111827" }}>
+                  <div className="form-group shift-config-box" style={{ marginTop: "0.75rem" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.35rem" }}>
+                      <label style={{ margin: 0, fontWeight: 700, fontSize: "0.78rem", color: "#111827" }}>
                         Required Operational Shifts ({shifts.length} active)
                       </label>
-                      <span className="field-hint" style={{ margin: 0 }}>Select shifts that must log this SOP</span>
+                      <span className="field-hint" style={{ margin: 0 }}>Select required shifts</span>
                     </div>
 
                     <div className="shift-tags-row">
@@ -1163,7 +1157,7 @@ export default function TemplateManagerClient({
                     </div>
 
                     {/* Add Custom Shift to Template */}
-                    <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.75rem" }}>
+                    <div style={{ display: "flex", gap: "0.4rem", marginTop: "0.5rem" }}>
                       <input
                         type="text"
                         value={customShiftInput}
@@ -1174,17 +1168,16 @@ export default function TemplateManagerClient({
                             handleAddCustomShift();
                           }
                         }}
-                        placeholder="Add custom shift (e.g. Closing, Late Night)..."
-                        className="form-input"
-                        style={{ flex: 1, fontSize: "0.82rem", minHeight: "34px" }}
+                        placeholder="Add shift (e.g. Closing)..."
+                        className="form-input template-input"
+                        style={{ flex: 1 }}
                       />
                       <button
                         type="button"
                         onClick={handleAddCustomShift}
                         className="btn-add-item-small"
-                        style={{ padding: "0.35rem 0.85rem" }}
                       >
-                        ➕ Add Shift
+                        ➕ Add
                       </button>
                     </div>
                   </div>
@@ -1293,11 +1286,11 @@ export default function TemplateManagerClient({
                                     title="Checkpoint Input Type"
                                   >
                                     <option value="STATUS">✓/✕ Pass / Fail</option>
-                                    <option value="TEMPERATURE">🧊 Temperature</option>
-                                    <option value="NUMERIC">🔢 Numeric / PPM</option>
+                                    <option value="TEMPERATURE">🧊 Temp (°C)</option>
+                                    <option value="NUMERIC">🔢 Number / PPM</option>
                                     <option value="CLEAN_DIRTY">🧼 Clean / Action</option>
-                                    <option value="TEXT">📝 Text / Notes</option>
-                                    <option value="TIME">🕒 Time Verification</option>
+                                    <option value="TEXT">📝 Notes / Text</option>
+                                    <option value="TIME">🕒 Time Log</option>
                                   </select>
                                 </div>
 
@@ -1604,44 +1597,44 @@ export default function TemplateManagerClient({
                     border: isArchived ? "1px solid #fed7aa" : "1px solid var(--border)",
                   }}
                 >
-                  <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer", fontWeight: 600, fontSize: "0.95rem" }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer", fontWeight: 600, fontSize: "0.85rem" }}>
                     <input
                       type="checkbox"
                       checked={isArchived}
                       onChange={(e) => setIsArchived(e.target.checked)}
-                      style={{ width: "18px", height: "18px", accentColor: "#ea580c" }}
+                      style={{ width: "16px", height: "16px", accentColor: "#ea580c" }}
                     />
                     <span>📦 Archive this Report Tab</span>
                   </label>
-                  <p style={{ margin: "6px 0 0 28px", fontSize: "0.82rem", color: "#64748b" }}>
-                    Archiving hides this tab from active daily outlet checklists and operator navigation while preserving all historical audit submissions.
+                  <p style={{ margin: "4px 0 0 26px", fontSize: "0.78rem", color: "#64748b" }}>
+                    Archiving hides this tab from active daily outlet checklists while preserving historical audit records.
                   </p>
                 </div>
               )}
-
-              {/* Action Buttons */}
-              <div className="modal-actions-bar">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="btn-cancel"
-                >
-                  Cancel
-                </button>
-                <div className="modal-summary-pill">
-                  <span>📋</span>
-                  <span>{sections.reduce((acc, s) => acc + s.items.length, 0)} Checkpoints • {sections.length} Section{sections.length === 1 ? "" : "s"}</span>
-                </div>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="btn-primary-save"
-                >
-                  {saving ? "Saving Report Tab..." : editingTemplate ? "Update Report Tab" : "Create Report Tab"}
-                </button>
-              </div>
-
             </form>
+
+            {/* Anchored Bottom Actions Bar */}
+            <div className="modal-actions-bar">
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(false)}
+                className="btn-cancel"
+              >
+                Cancel
+              </button>
+              <div className="modal-summary-pill">
+                <span>📋</span>
+                <span>{sections.reduce((acc, s) => acc + s.items.length, 0)} Checkpoints • {sections.length} Section{sections.length === 1 ? "" : "s"}</span>
+              </div>
+              <button
+                type="submit"
+                form="template-editor-form"
+                disabled={saving}
+                className="btn-primary-save"
+              >
+                {saving ? "Saving..." : editingTemplate ? "Update Report Tab" : "Create Report Tab"}
+              </button>
+            </div>
           </div>
         </div>
       )}
