@@ -1105,34 +1105,31 @@ function getInitialDataForSchema(
 
                         return (
                           <div key={item.id || idx} className={`notion-checkpoint-card ${isBreach ? "card-breach" : ""}`}>
-                            <div className="notion-checkpoint-top">
-                              <div className="notion-checkpoint-info">
-                                <div className="notion-checkpoint-title-row">
-                                  <span className="notion-item-index">{idx + 1}</span>
-                                  <h3 className="notion-checkpoint-title">{item.name || item.task}</h3>
-                                </div>
-                                {item.hint && <div className="notion-checkpoint-hint">{item.hint}</div>}
-                                {(min !== undefined || max !== undefined) && (
-                                  <div style={{ paddingLeft: "28px" }}>
-                                    <span className="notion-checkpoint-spec">
-                                      Safe: {min !== undefined ? `${min}` : "-∞"} to {max !== undefined ? `${max}` : "+∞"} {unit}
-                                    </span>
-                                  </div>
-                                )}
-                                <div className="notion-staff-row">
-                                  <span className="notion-staff-label">🧹 Cleaned by:</span>
-                                  <select
-                                    value={cp.cleanedBy || cp.assignee || eligibleStaff[0]}
-                                    onChange={(e) => updateCp({ cleanedBy: e.target.value, assignee: e.target.value })}
-                                    className="notion-staff-select"
-                                  >
-                                    {eligibleStaff.map((st: string) => (
-                                      <option key={st} value={st}>
-                                        {st}
-                                      </option>
-                                    ))}
-                                  </select>
-                                </div>
+                            <div className="notion-checkpoint-title-row">
+                              <span className="notion-item-index">{idx + 1}</span>
+                              <h3 className="notion-checkpoint-title">{item.name || item.task}</h3>
+                              {(min !== undefined || max !== undefined) && (
+                                <span className="notion-checkpoint-spec">
+                                  Safe: {min !== undefined ? `${min}` : "-∞"} to {max !== undefined ? `${max}` : "+∞"} {unit}
+                                </span>
+                              )}
+                            </div>
+                            {item.hint && <div className="notion-checkpoint-hint">{item.hint}</div>}
+
+                            <div className="notion-checkpoint-footer">
+                              <div className="notion-staff-row">
+                                <span className="notion-staff-label">🧹 Cleaned by:</span>
+                                <select
+                                  value={cp.cleanedBy || cp.assignee || eligibleStaff[0]}
+                                  onChange={(e) => updateCp({ cleanedBy: e.target.value, assignee: e.target.value })}
+                                  className="notion-staff-select"
+                                >
+                                  {eligibleStaff.map((st: string) => (
+                                    <option key={st} value={st}>
+                                      {st}
+                                    </option>
+                                  ))}
+                                </select>
                               </div>
 
                               <div className="notion-checkpoint-action">
@@ -1187,7 +1184,7 @@ function getInitialDataForSchema(
                                     placeholder="Observation or remark..."
                                     onChange={(e) => updateCp({ value: e.target.value })}
                                     className="notion-callout-input"
-                                    style={{ border: '1px solid #E6E5E3', borderRadius: '6px', padding: '6px 10px', background: '#FFFFFF', minHeight: '34px' }}
+                                    style={{ border: '1px solid #E6E5E3', borderRadius: '6px', padding: '4px 8px', background: '#FFFFFF', minHeight: '28px', maxWidth: '200px' }}
                                   />
                                 )}
                               </div>
@@ -1256,28 +1253,26 @@ function getInitialDataForSchema(
                   const eligibleStaff = getEligibleStaffForItem(item, sections[0]);
                   return (
                     <div key={item.id || idx} className="notion-checkpoint-card">
-                      <div className="notion-checkpoint-top">
-                        <div className="notion-checkpoint-info">
-                          <div className="notion-checkpoint-title-row">
-                            <span className="notion-item-index">{idx + 1}</span>
-                            <h3 className="notion-checkpoint-title">{item.name}</h3>
-                          </div>
-                          <div className="notion-staff-row">
-                            <span className="notion-staff-label">🧹 Cleaned by:</span>
-                            <select
-                              value={item.cleanedBy || eligibleStaff[0]}
-                              onChange={(e) => {
-                                const newItems = [...(formData.items || [])];
-                                newItems[idx] = { ...item, cleanedBy: e.target.value };
-                                setFormData({ ...formData, items: newItems });
-                              }}
-                              className="notion-staff-select"
-                            >
-                              {eligibleStaff.map((st: string) => (
-                                <option key={st} value={st}>{st}</option>
-                              ))}
-                            </select>
-                          </div>
+                      <div className="notion-checkpoint-title-row">
+                        <span className="notion-item-index">{idx + 1}</span>
+                        <h3 className="notion-checkpoint-title">{item.name}</h3>
+                      </div>
+                      <div className="notion-checkpoint-footer">
+                        <div className="notion-staff-row">
+                          <span className="notion-staff-label">🧹 Cleaned by:</span>
+                          <select
+                            value={item.cleanedBy || eligibleStaff[0]}
+                            onChange={(e) => {
+                              const newItems = [...(formData.items || [])];
+                              newItems[idx] = { ...item, cleanedBy: e.target.value };
+                              setFormData({ ...formData, items: newItems });
+                            }}
+                            className="notion-staff-select"
+                          >
+                            {eligibleStaff.map((st: string) => (
+                              <option key={st} value={st}>{st}</option>
+                            ))}
+                          </select>
                         </div>
                         <div className="notion-checkpoint-action">
                           <YesNoNaToggle
@@ -1369,28 +1364,26 @@ function getInitialDataForSchema(
                         const eligibleStaff = getEligibleStaffForItem(ci, sec);
                         return (
                           <div key={ci.id || idx} className="notion-checkpoint-card">
-                            <div className="notion-checkpoint-top">
-                              <div className="notion-checkpoint-info">
-                                <div className="notion-checkpoint-title-row">
-                                  <span className="notion-item-index">{idx + 1}</span>
-                                  <h3 className="notion-checkpoint-title">{ci.name}</h3>
-                                </div>
-                                <div className="notion-staff-row">
-                                  <span className="notion-staff-label">🧹 Sanitized by:</span>
-                                  <select
-                                    value={ci.cleanedBy || eligibleStaff[0]}
-                                    onChange={(e) => {
-                                      const newItems = [...formData.completedItems];
-                                      newItems[globalIdx] = { ...ci, cleanedBy: e.target.value };
-                                      setFormData({ ...formData, completedItems: newItems });
-                                    }}
-                                    className="notion-staff-select"
-                                  >
-                                    {eligibleStaff.map((st: string) => (
-                                      <option key={st} value={st}>{st}</option>
-                                    ))}
-                                  </select>
-                                </div>
+                            <div className="notion-checkpoint-title-row">
+                              <span className="notion-item-index">{idx + 1}</span>
+                              <h3 className="notion-checkpoint-title">{ci.name}</h3>
+                            </div>
+                            <div className="notion-checkpoint-footer">
+                              <div className="notion-staff-row">
+                                <span className="notion-staff-label">🧹 Sanitized by:</span>
+                                <select
+                                  value={ci.cleanedBy || eligibleStaff[0]}
+                                  onChange={(e) => {
+                                    const newItems = [...formData.completedItems];
+                                    newItems[globalIdx] = { ...ci, cleanedBy: e.target.value };
+                                    setFormData({ ...formData, completedItems: newItems });
+                                  }}
+                                  className="notion-staff-select"
+                                >
+                                  {eligibleStaff.map((st: string) => (
+                                    <option key={st} value={st}>{st}</option>
+                                  ))}
+                                </select>
                               </div>
                               <div className="notion-checkpoint-action">
                                 <YesNoNaToggle
@@ -1494,36 +1487,32 @@ function getInitialDataForSchema(
 
                   return (
                     <div key={reading.id || idx} className={`notion-checkpoint-card ${isBreach ? "card-breach" : ""}`}>
-                      <div className="notion-checkpoint-top">
-                        <div className="notion-checkpoint-info">
-                          <div className="notion-checkpoint-title-row">
-                            <span className="notion-item-index">{idx + 1}</span>
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <h3 className="notion-checkpoint-title">
-                                {reading.name}
-                                {reading.machineNumber && ` #${reading.machineNumber}`}
-                              </h3>
-                            </div>
-                            <span className="notion-checkpoint-spec">
-                              {reading.referenceTemp || `${min}°C to ${max}°C`}
-                            </span>
-                          </div>
-                          <div className="notion-staff-row">
-                            <span className="notion-staff-label">❄️ Maintained / Cleaned by:</span>
-                            <select
-                              value={reading.maintainedBy || reading.cleanedBy || eligibleStaff[0]}
-                              onChange={(e) => {
-                                const newReadings = [...(formData.readings || [])];
-                                newReadings[idx] = { ...reading, maintainedBy: e.target.value, cleanedBy: e.target.value };
-                                setFormData({ ...formData, readings: newReadings });
-                              }}
-                              className="notion-staff-select"
-                            >
-                              {eligibleStaff.map((st: string) => (
-                                <option key={st} value={st}>{st}</option>
-                              ))}
-                            </select>
-                          </div>
+                      <div className="notion-checkpoint-title-row">
+                        <span className="notion-item-index">{idx + 1}</span>
+                        <h3 className="notion-checkpoint-title">
+                          {reading.name}
+                          {reading.machineNumber && ` #${reading.machineNumber}`}
+                        </h3>
+                        <span className="notion-checkpoint-spec">
+                          {reading.referenceTemp || `${min}°C to ${max}°C`}
+                        </span>
+                      </div>
+                      <div className="notion-checkpoint-meta-row">
+                        <div className="notion-staff-row">
+                          <span className="notion-staff-label">❄️ Maintained / Cleaned by:</span>
+                          <select
+                            value={reading.maintainedBy || reading.cleanedBy || eligibleStaff[0]}
+                            onChange={(e) => {
+                              const newReadings = [...(formData.readings || [])];
+                              newReadings[idx] = { ...reading, maintainedBy: e.target.value, cleanedBy: e.target.value };
+                              setFormData({ ...formData, readings: newReadings });
+                            }}
+                            className="notion-staff-select"
+                          >
+                            {eligibleStaff.map((st: string) => (
+                              <option key={st} value={st}>{st}</option>
+                            ))}
+                          </select>
                         </div>
                       </div>
 
@@ -1610,28 +1599,26 @@ function getInitialDataForSchema(
                   const eligibleStaff = getEligibleStaffForItem(loc, sections[0]);
                   return (
                     <div key={loc.id || idx} className="notion-checkpoint-card">
-                      <div className="notion-checkpoint-top">
-                        <div className="notion-checkpoint-info">
-                          <div className="notion-checkpoint-title-row">
-                            <span className="notion-item-index">{idx + 1}</span>
-                            <h3 className="notion-checkpoint-title">{loc.location}</h3>
-                          </div>
-                          <div className="notion-staff-row">
-                            <span className="notion-staff-label">🧹 Cleaned by:</span>
-                            <select
-                              value={loc.cleanedBy || eligibleStaff[0]}
-                              onChange={(e) => {
-                                const newLocs = [...(formData.locations || [])];
-                                newLocs[idx] = { ...loc, cleanedBy: e.target.value };
-                                setFormData({ ...formData, locations: newLocs });
-                              }}
-                              className="notion-staff-select"
-                            >
-                              {eligibleStaff.map((st: string) => (
-                                <option key={st} value={st}>{st}</option>
-                              ))}
-                            </select>
-                          </div>
+                      <div className="notion-checkpoint-title-row">
+                        <span className="notion-item-index">{idx + 1}</span>
+                        <h3 className="notion-checkpoint-title">{loc.location}</h3>
+                      </div>
+                      <div className="notion-checkpoint-footer">
+                        <div className="notion-staff-row">
+                          <span className="notion-staff-label">🧹 Cleaned by:</span>
+                          <select
+                            value={loc.cleanedBy || eligibleStaff[0]}
+                            onChange={(e) => {
+                              const newLocs = [...(formData.locations || [])];
+                              newLocs[idx] = { ...loc, cleanedBy: e.target.value };
+                              setFormData({ ...formData, locations: newLocs });
+                            }}
+                            className="notion-staff-select"
+                          >
+                            {eligibleStaff.map((st: string) => (
+                              <option key={st} value={st}>{st}</option>
+                            ))}
+                          </select>
                         </div>
                         <div className="notion-checkpoint-action">
                           <YesNoNaToggle
@@ -1708,35 +1695,31 @@ function getInitialDataForSchema(
                   const eligibleStaff = getEligibleStaffForItem(task, sections[0]);
                   return (
                     <div key={task.id || idx} className="notion-checkpoint-card">
-                      <div className="notion-checkpoint-top">
-                        <div className="notion-checkpoint-info">
-                          <div className="notion-checkpoint-title-row">
-                            <span className="notion-item-index">{idx + 1}</span>
-                            <h3 className="notion-checkpoint-title">{task.task}</h3>
-                          </div>
-                          {task.category && (
-                            <div style={{ paddingLeft: "28px" }}>
-                              <span className="notion-checkpoint-spec" style={{ marginTop: "2px" }}>
-                                {task.category}
-                              </span>
-                            </div>
-                          )}
-                          <div className="notion-staff-row">
-                            <span className="notion-staff-label">🔧 Completed by:</span>
-                            <select
-                              value={task.completedBy || eligibleStaff[0]}
-                              onChange={(e) => {
-                                const newTasks = [...(formData.tasks || [])];
-                                newTasks[idx] = { ...task, completedBy: e.target.value };
-                                setFormData({ ...formData, tasks: newTasks });
-                              }}
-                              className="notion-staff-select"
-                            >
-                              {eligibleStaff.map((st: string) => (
-                                <option key={st} value={st}>{st}</option>
-                              ))}
-                            </select>
-                          </div>
+                      <div className="notion-checkpoint-title-row">
+                        <span className="notion-item-index">{idx + 1}</span>
+                        <h3 className="notion-checkpoint-title">{task.task}</h3>
+                        {task.category && (
+                          <span className="notion-checkpoint-spec">
+                            {task.category}
+                          </span>
+                        )}
+                      </div>
+                      <div className="notion-checkpoint-footer">
+                        <div className="notion-staff-row">
+                          <span className="notion-staff-label">🔧 Completed by:</span>
+                          <select
+                            value={task.completedBy || eligibleStaff[0]}
+                            onChange={(e) => {
+                              const newTasks = [...(formData.tasks || [])];
+                              newTasks[idx] = { ...task, completedBy: e.target.value };
+                              setFormData({ ...formData, tasks: newTasks });
+                            }}
+                            className="notion-staff-select"
+                          >
+                            {eligibleStaff.map((st: string) => (
+                              <option key={st} value={st}>{st}</option>
+                            ))}
+                          </select>
                         </div>
                         <div className="notion-checkpoint-action">
                           <YesNoNaToggle

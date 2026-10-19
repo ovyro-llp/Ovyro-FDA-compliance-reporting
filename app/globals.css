@@ -5665,12 +5665,12 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
 .notion-toggle-group {
   display: inline-flex;
   align-items: center;
-  background: #F1F1EF;
+  background: #F3F4F6;
   border-radius: 6px;
   padding: 2px;
   gap: 2px;
-  width: 100%;
-  max-width: 240px;
+  width: auto;
+  max-width: 190px;
   box-sizing: border-box;
 }
 
@@ -5684,44 +5684,46 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
   flex: 1;
   border: none;
   background: transparent;
-  color: #787774;
-  font-size: 12px;
-  font-weight: 500;
-  padding: 6px 12px;
+  color: #6B7280;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 0 11px;
+  height: 28px;
+  min-height: 28px;
   border-radius: 4px;
   cursor: pointer;
   transition: all 0.12s ease;
   text-align: center;
   white-space: nowrap;
   user-select: none;
-  min-height: 30px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .notion-toggle-btn:hover {
-  color: #2C2C2B;
+  color: #111827;
+  background: rgba(0, 0, 0, 0.03);
 }
 
 .notion-toggle-btn.active-pass {
   background: #FFFFFF;
-  color: #1F6B45;
-  font-weight: 600;
+  color: #15803D;
+  font-weight: 700;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
 }
 
 .notion-toggle-btn.active-fail {
   background: #FFFFFF;
-  color: #B5332E;
-  font-weight: 600;
+  color: #DC2626;
+  font-weight: 700;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
 }
 
 .notion-toggle-btn.active-na {
   background: #FFFFFF;
-  color: #2C2C2B;
-  font-weight: 600;
+  color: #374151;
+  font-weight: 700;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
 }
 
@@ -5817,24 +5819,25 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
 /* ─── NOTION CHECKPOINT CARDS (READABILITY & VISUAL FOCUS) ────────────────── */
 .notion-checkpoint-card {
   background: #FFFFFF;
-  border: 1px solid #E6E5E3;
-  border-radius: 8px;
+  border: 1px solid #E5E7EB;
+  border-radius: 9px;
   padding: 14px 16px;
   margin-bottom: 10px;
   box-sizing: border-box;
   width: 100%;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .notion-checkpoint-card:hover {
-  border-color: #D3D1CB;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  border-color: #D1D5DB;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.04);
 }
 
 .notion-checkpoint-card.card-breach {
   background: #FFFDF9;
-  border-color: #E3D98E;
-  border-left: 3px solid #E28834;
+  border-color: #FCD34D;
+  border-left: 4px solid #D97706;
 }
 
 .notion-checkpoint-top {
@@ -5853,18 +5856,19 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
 .notion-checkpoint-title-row {
   display: flex;
   align-items: flex-start;
-  gap: 8px;
+  gap: 9px;
   width: 100%;
 }
 
 .notion-item-index {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
-  color: #7D7A75;
-  background: #F1F1EF;
-  border-radius: 4px;
-  padding: 2px 6px;
-  line-height: 1.3;
+  color: #1F2937;
+  background: #F3F4F6;
+  border: 1px solid #E5E7EB;
+  border-radius: 5px;
+  padding: 2px 7px;
+  line-height: 1.25;
   flex-shrink: 0;
   margin-top: 2px;
   font-variant-numeric: tabular-nums;
@@ -5872,50 +5876,76 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
 }
 
 .notion-checkpoint-title {
-  font-size: 15.5px;
-  font-weight: 650;
-  color: #191919;
-  line-height: 1.4;
+  font-size: 17.5px;
+  font-weight: 700;
+  color: #111827;
+  line-height: 1.35;
   margin: 0;
-  letter-spacing: -0.012em;
+  letter-spacing: -0.018em;
   word-break: break-word;
+  flex: 1;
 }
 
 .notion-checkpoint-hint {
   font-size: 12px;
-  color: #7D7A75;
-  margin-top: 3px;
+  color: #6B7280;
+  margin-top: 4px;
   line-height: 1.4;
-  padding-left: 28px;
+  padding-left: 31px;
 }
 
 .notion-checkpoint-spec {
   font-size: 11.5px;
   font-weight: 600;
-  color: #4B5563;
-  background: #F7F6F3;
-  border: 1px solid #E6E5E3;
-  padding: 2px 7px;
+  color: #1E40AF;
+  background: #EFF6FF;
+  border: 1px solid #DBEAFE;
+  padding: 2px 8px;
   border-radius: 4px;
-  display: inline-block;
-  margin-top: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.notion-checkpoint-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 11px;
+  padding-top: 9px;
+  border-top: 1px solid #F3F4F6;
+  flex-wrap: wrap;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.notion-checkpoint-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+  flex-wrap: wrap;
 }
 
 .notion-staff-row {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 6px;
-  margin-top: 8px;
-  padding-left: 28px;
-  flex-wrap: wrap;
+  margin: 0;
+  padding: 0;
+  flex-shrink: 1;
+  min-width: 0;
 }
 
 .notion-staff-label {
   font-size: 11px;
   font-weight: 600;
-  color: #7D7A75;
+  color: #6B7280;
   text-transform: uppercase;
   letter-spacing: 0.04em;
+  white-space: nowrap;
   display: flex;
   align-items: center;
   gap: 3px;
@@ -5924,25 +5954,33 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
 .notion-staff-select {
   font-size: 12px;
   font-weight: 500;
-  color: #2C2C2B;
-  background: #F7F6F3;
-  border: 1px solid #E6E5E3;
-  border-radius: 4px;
-  padding: 3px 8px;
+  color: #374151;
+  background: #F9FAFB;
+  border: 1px solid #E5E7EB;
+  border-radius: 5px;
+  padding: 2px 8px;
+  height: 28px;
   outline: none;
   cursor: pointer;
-  max-width: 220px;
+  max-width: 160px;
   transition: all 0.12s ease;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 .notion-staff-select:focus,
 .notion-staff-select:hover {
   background: #FFFFFF;
-  border-color: #2C2C2B;
+  border-color: #111827;
 }
 
 .notion-checkpoint-action {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   flex-shrink: 0;
+  margin-left: auto;
 }
 
 .notion-temp-slots {
@@ -6503,46 +6541,72 @@ body:has(.notion-submit-bar) .mobile-bottom-nav {
     font-size: 11.5px;
   }
 
-  /* Mobile Checkpoint Stacking for Maximum Item Readability */
+  /* Mobile Checkpoint Item Readability & Compact Action Controls */
   .notion-checkpoint-card {
-    padding: 13px 13px;
+    padding: 12px 14px;
     margin-bottom: 8px;
   }
 
-  .notion-checkpoint-top {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
+  .notion-checkpoint-title {
+    font-size: 16.5px;
+    font-weight: 700;
+    line-height: 1.35;
+    color: #111827;
   }
 
-  .notion-checkpoint-title {
-    font-size: 15px;
-    font-weight: 650;
-    line-height: 1.38;
+  .notion-item-index {
+    font-size: 11.5px;
+    font-weight: 700;
+    padding: 2px 6px;
   }
 
   .notion-checkpoint-hint {
-    padding-left: 0;
-    margin-top: 4px;
+    padding-left: 28px;
+    margin-top: 3px;
+  }
+
+  .notion-checkpoint-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid #F3F4F6;
+    width: 100%;
+    box-sizing: border-box;
   }
 
   .notion-staff-row {
     padding-left: 0;
-    margin-top: 8px;
+    margin: 0;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .notion-staff-select {
+    max-width: 135px;
+    height: 26px;
+    font-size: 11.5px;
+    padding: 2px 6px;
   }
 
   .notion-checkpoint-action {
-    width: 100%;
+    width: auto !important;
+    margin-left: auto;
+    flex-shrink: 0;
   }
 
   .notion-toggle-group {
-    width: 100% !important;
-    max-width: 100% !important;
+    width: auto !important;
+    max-width: 175px !important;
   }
 
   .notion-toggle-btn {
-    min-height: 36px;
-    font-size: 12.5px;
+    min-height: 28px !important;
+    height: 28px !important;
+    font-size: 11px !important;
+    padding: 0 9px !important;
   }
 }
 
