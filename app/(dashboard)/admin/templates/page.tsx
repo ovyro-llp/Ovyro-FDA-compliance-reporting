@@ -30,7 +30,7 @@ export default async function AdminTemplatesPage() {
 
   const organizationId = await resolveOrganizationId(user);
 
-  const [rawTemplates, rawOutlets] = await Promise.all([
+  const [rawTemplates, rawOutlets, rawStaffUsers, org] = await Promise.all([
     prisma.formTemplate.findMany({
       where: { organizationId },
       orderBy: { createdAt: "desc" },
@@ -48,8 +48,32 @@ export default async function AdminTemplatesPage() {
       select: { id: true, name: true, icon: true, shifts: true },
       orderBy: { createdAt: "asc" },
     }),
+    prisma.user.findMany({
+      where: { organizationId, isActive: true },
+      select: { name: true },
+      orderBy: { name: "asc" },
+    }),
+    prisma.organization.findUnique({
+      where: { id: organizationId },
+      select: { settings: true },
+    }),
   ]);
 
+  const parsedSettings = safeJson(org?.settings, {});
+  const groundStaffRoster: Array<{ name: string }> = Array.isArray(parsedSettings.staffRoster)
+    ? parsedSettings.staffRoster
+    : [];
+
+  const availableStaff = Array.from(
+    new Set([
+      ...rawStaffUsers.map((u) => u.name),
+      ...groundStaffRoster.map((g) => g.name),
+      "Staff Member",
+      "Shift Supervisor",
+      "Kitchen Lead",
+      "Head Chef",
+    ].filter(Boolean))
+  );
 
   const templates = rawTemplates.map((t) => ({
     ...t,
@@ -65,6 +89,7 @@ export default async function AdminTemplatesPage() {
     <TemplateManagerClient
       initialTemplates={JSON.parse(JSON.stringify(templates))}
       outlets={JSON.parse(JSON.stringify(outlets))}
+      availableStaff={availableStaff}
     />
   );
 }

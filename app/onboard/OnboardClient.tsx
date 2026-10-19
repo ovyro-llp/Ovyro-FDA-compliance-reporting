@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
-import Link from "next/link";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 interface OnboardClientProps {
@@ -28,32 +27,32 @@ interface OnboardClientProps {
 
 const PRESETS = [
   {
-    id: "RESTAURANT",
+    id: "RESTAURANT" as const,
     title: "Dine-In & Casual Restaurant",
     icon: "🍽️",
     badge: "FSSAI Schedule 4",
-    desc: "Line refrigeration monitoring, hot holding temp checks, food contact sanitization & deep cleaning logs.",
+    desc: "Line refrigeration monitoring, hot holding temp checks, sanitization & cleaning logs.",
   },
   {
-    id: "CLOUD_KITCHEN",
-    title: "Cloud & Dark Kitchen",
+    id: "CLOUD_KITCHEN" as const,
+    title: "Cloud & Delivery Kitchen",
     icon: "🛵",
     badge: "Delivery SOP",
-    desc: "Rider dispatch thermal checks (>65°C / <5°C), tamper-evident bag sealing & high-velocity sanitization.",
+    desc: "Rider dispatch thermal checks (>65°C / <5°C), tamper-evident bag sealing & quick prep audits.",
   },
   {
-    id: "CAFE",
+    id: "CAFE" as const,
     title: "Cafe, Bakery & QSR",
     icon: "☕",
     badge: "Barista & Chiller",
-    desc: "Display pastry chiller temperature (+2°C to +6°C), espresso dial-in, steam wand chemical sanitize & water TDS.",
+    desc: "Pastry display chillers (+2°C to +6°C), espresso dial-in, steam wand chemical sanitize & TDS logs.",
   },
   {
-    id: "MANUFACTURING",
+    id: "MANUFACTURING" as const,
     title: "Food & Material Processing",
     icon: "🏭",
     badge: "HACCP & Batch QA",
-    desc: "Raw material receipt, supplier COA verification, moisture % log, insect UV light trap & quarantine tracking.",
+    desc: "Inbound raw materials, supplier COA verification, moisture % log & insect UV trap checks.",
   },
 ];
 
@@ -61,12 +60,21 @@ const SHIFT_OPTIONS = ["Morning", "Afternoon", "Evening", "Night"];
 
 export default function OnboardClient({ user, organization, products }: OnboardClientProps) {
   const router = useRouter();
-  const [step, setStep] = useState<1 | 2 | 3>(1);
 
-  // Step 1: Industry Preset
+  // Single Question Index: 1 to 5
+  // Q1: Business Type
+  // Q2: Primary Facility Name
+  // Q3: Operating Shifts
+  // Q4: Food Safety Risk Modules
+  // Q5: Plan & Checkout
+  const [questionIdx, setQuestionIdx] = useState<number>(1);
+
+  // Form State
   const [industry, setIndustry] = useState<"RESTAURANT" | "CLOUD_KITCHEN" | "CAFE" | "MANUFACTURING">("RESTAURANT");
-
-  // Step 2: Risk Modules & Facility Details
+  const [facilityName, setFacilityName] = useState(
+    organization.primaryOutlet?.name || `${organization.name} - Main Kitchen`
+  );
+  const [selectedShifts, setSelectedShifts] = useState<string[]>(["Morning", "Evening"]);
   const [modules, setModules] = useState({
     hasColdStorage: true,
     hasFryers: false,
@@ -75,17 +83,7 @@ export default function OnboardClient({ user, organization, products }: OnboardC
     hasRawMaterialIntake: false,
     hasPestControl: true,
   });
-
-  const [facilityName, setFacilityName] = useState(
-    organization.primaryOutlet?.name || `${organization.name} - Main Facility`
-  );
-  const [selectedShifts, setSelectedShifts] = useState<string[]>(["Morning", "Evening"]);
   const [contactPhone, setContactPhone] = useState(organization.contactPhone || "");
-
-  // Placed templates returned from API
-  const [placedTemplates, setPlacedTemplates] = useState<Array<{ id: string; title: string; category: string }>>([]);
-
-  // Step 3: Subscription Plan
   const [selectedPlan, setSelectedPlan] = useState<"MONTHLY" | "ANNUAL">("MONTHLY");
 
   const [saving, setSaving] = useState(false);
@@ -101,7 +99,6 @@ export default function OnboardClient({ user, organization, products }: OnboardC
 
   const handleIndustrySelect = (type: "RESTAURANT" | "CLOUD_KITCHEN" | "CAFE" | "MANUFACTURING") => {
     setIndustry(type);
-    // Adjust default risk modules based on business type
     setModules({
       hasColdStorage: true,
       hasFryers: type === "RESTAURANT" || type === "CLOUD_KITCHEN",
@@ -114,7 +111,7 @@ export default function OnboardClient({ user, organization, products }: OnboardC
 
   const toggleShift = (shift: string) => {
     if (selectedShifts.includes(shift)) {
-      if (selectedShifts.length === 1) return; // Keep at least one
+      if (selectedShifts.length === 1) return;
       setSelectedShifts(selectedShifts.filter((s) => s !== shift));
     } else {
       setSelectedShifts([...selectedShifts, shift]);
@@ -125,7 +122,28 @@ export default function OnboardClient({ user, organization, products }: OnboardC
     setModules((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const handleSavePreferencesAndContinue = async () => {
+  // Keyboard navigation: Enter to advance (when not in checkout)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        if (questionIdx === 1) {
+          e.preventDefault();
+          setQuestionIdx(2);
+        } else if (questionIdx === 2 && facilityName.trim()) {
+          e.preventDefault();
+          setQuestionIdx(3);
+        } else if (questionIdx === 3 && selectedShifts.length > 0) {
+          e.preventDefault();
+          setQuestionIdx(4);
+        }
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [questionIdx, facilityName, selectedShifts]);
+
+  // Advance from Q4 (Modules) to Q5 (Plan) by saving preferences to API
+  const handleSavePreferencesAndProceedToPlan = async () => {
     setSaving(true);
     setError("");
     try {
@@ -144,11 +162,8 @@ export default function OnboardClient({ user, organization, products }: OnboardC
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to configure workspace");
 
-      if (data.templates) {
-        setPlacedTemplates(data.templates);
-      }
-
-      setStep(3);
+      setQuestionIdx(5);
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err: any) {
       setError(err.message || "Failed to update facility preferences");
     } finally {
@@ -156,6 +171,7 @@ export default function OnboardClient({ user, organization, products }: OnboardC
     }
   };
 
+  // Final Action on Q5: Launch Dodo Payments checkout
   const handleProceedToDodoPayment = async () => {
     setSaving(true);
     setError("");
@@ -166,7 +182,7 @@ export default function OnboardClient({ user, organization, products }: OnboardC
         body: JSON.stringify({
           organizationId: organization.id,
           planInterval: selectedPlan,
-          returnUrl: `${window.location.origin}/admin/billing?session_id={CHECKOUT_SESSION_ID}`,
+          returnUrl: `${window.location.origin}/onboard/setup?session_id={CHECKOUT_SESSION_ID}`,
         }),
       });
 
@@ -176,7 +192,7 @@ export default function OnboardClient({ user, organization, products }: OnboardC
       if (data.checkoutUrl) {
         window.location.href = data.checkoutUrl;
       } else {
-        router.push("/dashboard");
+        router.push("/onboard/setup");
       }
     } catch (err: any) {
       setError(err.message || "Failed to initiate payment");
@@ -184,640 +200,373 @@ export default function OnboardClient({ user, organization, products }: OnboardC
     }
   };
 
+  const progressPercentage = (questionIdx / 5) * 100;
+
   return (
-    <div style={{
-      minHeight: "100vh",
-      background: "var(--bg-primary, #f8f6f1)",
-      padding: "2.5rem 1rem",
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      justifyContent: "center",
-      fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
-    }}>
-      <div style={{
-        width: "100%",
-        maxWidth: "680px",
-        background: "var(--bg-card, #ffffff)",
-        borderRadius: "var(--radius-lg, 16px)",
-        boxShadow: "0 4px 20px rgba(44, 30, 20, 0.06), 0 1px 3px rgba(44, 30, 20, 0.04)",
-        border: "1px solid var(--border, #e6dfd5)",
-        overflow: "hidden",
-      }}>
-        {/* Top Header */}
-        <div style={{
-          padding: "1.75rem 2rem 1.25rem 2rem",
-          borderBottom: "1px solid var(--border, #e6dfd5)",
-          background: "#ffffff",
-        }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.75rem" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-              <div style={{
-                width: "36px",
-                height: "36px",
-                borderRadius: "8px",
-                background: "linear-gradient(135deg, #78350f, #92400e)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "white",
-                fontSize: "1.1rem",
-              }}>
-                📋
-              </div>
-              <div>
-                <div style={{ fontSize: "1.05rem", fontWeight: 700, color: "var(--text-primary, #1c1917)" }}>
-                  Reporting SaaS
-                </div>
-                <div style={{ fontSize: "0.75rem", color: "var(--text-muted, #78716c)" }}>
-                  Workspace: <strong>{organization.name}</strong>
-                </div>
-              </div>
-            </div>
-
-            {/* Authenticated User Pill */}
-            <div style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "0.4rem",
-              padding: "0.3rem 0.75rem",
-              background: "var(--bg-primary, #f8f6f1)",
-              borderRadius: "9999px",
-              border: "1px solid var(--border, #e6dfd5)",
-              fontSize: "0.75rem",
-              color: "var(--text-secondary, #44403c)",
-            }}>
-              <span>👤</span>
-              <span>{user.name}</span>
-            </div>
+    <div className="onboard-wizard-wrapper">
+      {/* Sticky Header with Animated Progress Bar */}
+      <header className="onboard-wizard-header">
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <div style={{ width: "32px", height: "32px", borderRadius: "8px", background: "#111111", color: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "700", fontSize: "14px" }}>
+            OV
           </div>
-
-          {/* Stepper Segmented Control */}
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr 1fr",
-            gap: "0.5rem",
-            marginTop: "1.5rem",
-            padding: "0.25rem",
-            background: "var(--bg-primary, #f8f6f1)",
-            borderRadius: "var(--radius-sm, 8px)",
-          }}>
-            <div style={{
-              padding: "0.45rem",
-              textAlign: "center",
-              borderRadius: "6px",
-              fontSize: "0.75rem",
-              fontWeight: 600,
-              background: step === 1 ? "#ffffff" : "transparent",
-              color: step === 1 ? "var(--text-primary, #1c1917)" : "var(--text-muted, #78716c)",
-              boxShadow: step === 1 ? "0 1px 3px rgba(0,0,0,0.06)" : "none",
-              transition: "all 0.2s ease",
-            }}>
-              1. Operation Type
-            </div>
-
-            <div style={{
-              padding: "0.45rem",
-              textAlign: "center",
-              borderRadius: "6px",
-              fontSize: "0.75rem",
-              fontWeight: 600,
-              background: step === 2 ? "#ffffff" : "transparent",
-              color: step === 2 ? "var(--text-primary, #1c1917)" : "var(--text-muted, #78716c)",
-              boxShadow: step === 2 ? "0 1px 3px rgba(0,0,0,0.06)" : "none",
-              transition: "all 0.2s ease",
-            }}>
-              2. Facility & Shifts
-            </div>
-
-            <div style={{
-              padding: "0.45rem",
-              textAlign: "center",
-              borderRadius: "6px",
-              fontSize: "0.75rem",
-              fontWeight: 600,
-              background: step === 3 ? "#ffffff" : "transparent",
-              color: step === 3 ? "var(--text-primary, #1c1917)" : "var(--text-muted, #78716c)",
-              boxShadow: step === 3 ? "0 1px 3px rgba(0,0,0,0.06)" : "none",
-              transition: "all 0.2s ease",
-            }}>
-              3. Subscription
+          <div>
+            <div style={{ fontSize: "14px", fontWeight: "600", color: "#111111" }}>{organization.name}</div>
+            <div style={{ fontSize: "11px", color: "#777774" }}>
+              Question {questionIdx} of 5
             </div>
           </div>
         </div>
 
-        {error && (
-          <div style={{
-            background: "var(--danger-bg, rgba(220, 38, 38, 0.09))",
-            color: "var(--danger, #dc2626)",
-            padding: "0.75rem 1.5rem",
-            fontSize: "0.85rem",
-            borderBottom: "1px solid var(--border, #e6dfd5)",
-            fontWeight: 500,
-          }}>
-            ⚠️ {error}
-          </div>
-        )}
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <span style={{ fontSize: "12px", color: "#777774" }}>
+            Signed in as <strong>{user.email}</strong>
+          </span>
+        </div>
 
-        <div style={{ padding: "1.75rem 2rem" }}>
-          {/* ─── STEP 1: Operation Classification ─────────────────────────── */}
-          {step === 1 && (
-            <div>
-              <div style={{ marginBottom: "1.25rem" }}>
-                <h2 style={{ fontSize: "1.25rem", fontWeight: 700, color: "var(--text-primary, #1c1917)", margin: "0 0 0.25rem 0" }}>
-                  What kind of food operation do you run?
-                </h2>
-                <p style={{ fontSize: "0.85rem", color: "var(--text-muted, #78716c)", margin: 0 }}>
-                  We will automatically configure your pre-loaded audit checklists, temperature monitoring rules, and equipment SOPs.
-                </p>
-              </div>
+        <div className="onboard-progress-track">
+          <div className="onboard-progress-fill" style={{ width: `${progressPercentage}%` }} />
+        </div>
+      </header>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "0.85rem" }}>
+      {/* Error banner */}
+      {error && (
+        <div style={{ position: "fixed", top: "70px", left: "50%", transform: "translateX(-50%)", zIndex: 100, background: "#FEF2F2", color: "#991B1B", border: "1px solid #FECACA", padding: "8px 16px", borderRadius: "8px", fontSize: "13.5px", boxShadow: "0 4px 12px rgba(0,0,0,0.06)" }}>
+          {error}
+        </div>
+      )}
+
+      {/* Main Single-Question Container */}
+      <main className="onboard-wizard-content">
+        {/* QUESTION 1: BUSINESS TYPE */}
+        {questionIdx === 1 && (
+          <div key="q-1" style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
+            <h1 className="onboard-anim-title">What type of food business do you operate?</h1>
+            <p className="onboard-anim-sub">
+              We customize your compliance checklists and regulatory reporting standards based on your operational model.
+            </p>
+
+            <div className="onboard-anim-card">
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "24px" }}>
                 {PRESETS.map((p) => {
                   const isSelected = industry === p.id;
                   return (
                     <div
                       key={p.id}
-                      onClick={() => handleIndustrySelect(p.id as any)}
-                      style={{
-                        padding: "1rem 1.25rem",
-                        borderRadius: "var(--radius-md, 12px)",
-                        border: `1.5px solid ${isSelected ? "#059669" : "var(--border, #e6dfd5)"}`,
-                        background: isSelected ? "#f0fdf4" : "#ffffff",
-                        cursor: "pointer",
-                        display: "flex",
-                        alignItems: "flex-start",
-                        gap: "1rem",
-                        transition: "var(--transition, 0.2s ease)",
-                      }}
+                      onClick={() => handleIndustrySelect(p.id)}
+                      className={`onboard-template-card ${isSelected ? "selected" : ""}`}
                     >
-                      <span style={{ fontSize: "1.85rem" }}>{p.icon}</span>
+                      <div style={{ fontSize: "24px", marginTop: "2px" }}>{p.icon}</div>
                       <div style={{ flex: 1 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                          <span style={{ fontWeight: 700, fontSize: "0.95rem", color: isSelected ? "#065f46" : "var(--text-primary, #1c1917)" }}>
-                            {p.title}
-                          </span>
-                          <span style={{
-                            fontSize: "0.65rem",
-                            padding: "0.15rem 0.45rem",
-                            borderRadius: "4px",
-                            background: isSelected ? "#dcfce7" : "var(--bg-primary, #f8f6f1)",
-                            color: isSelected ? "#166534" : "var(--text-muted, #78716c)",
-                            fontWeight: 700,
-                            letterSpacing: "0.03em",
-                            textTransform: "uppercase",
-                          }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+                          <span style={{ fontWeight: "600", fontSize: "15px", color: "#111111" }}>{p.title}</span>
+                          <span style={{ fontSize: "11px", background: "#F0EEE9", color: "#666662", padding: "2px 6px", borderRadius: "4px", fontWeight: "500" }}>
                             {p.badge}
                           </span>
                         </div>
-                        <div style={{ fontSize: "0.8rem", color: "var(--text-secondary, #44403c)", marginTop: "0.3rem", lineHeight: 1.45 }}>
+                        <div style={{ fontSize: "13px", color: "#666664", lineHeight: "1.4" }}>
                           {p.desc}
                         </div>
                       </div>
-                      <div style={{
-                        width: "20px",
-                        height: "20px",
-                        borderRadius: "50%",
-                        border: `2px solid ${isSelected ? "#059669" : "var(--border, #e6dfd5)"}`,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        marginTop: "2px",
-                      }}>
-                        {isSelected && <div style={{ width: "10px", height: "10px", borderRadius: "50%", background: "#059669" }} />}
-                      </div>
+                      <div style={{ width: "20px", height: "20px", borderRadius: "50%", border: isSelected ? "5px solid #111111" : "2px solid #D2CFC7", background: "#FFFFFF", alignSelf: "center", boxSizing: "border-box" }} />
                     </div>
                   );
                 })}
               </div>
 
-              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "1.75rem" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid #ECEAE5", paddingTop: "20px" }}>
+                <div className="onboard-kbd-hint">
+                  Press <span className="onboard-kbd-tag">Enter ↵</span> to continue
+                </div>
                 <button
                   type="button"
-                  onClick={() => setStep(2)}
-                  className="btn-create-primary"
-                  style={{ minWidth: "150px", justifyContent: "center" }}
+                  onClick={() => setQuestionIdx(2)}
+                  className="onboard-primary-btn"
                 >
-                  <span>Continue →</span>
+                  Continue →
                 </button>
               </div>
             </div>
-          )}
+          </div>
+        )}
 
-          {/* ─── STEP 2: Facility & Operational Risk Profile ────────────────── */}
-          {step === 2 && (
-            <div>
-              <div style={{ marginBottom: "1.25rem" }}>
-                <h2 style={{ fontSize: "1.25rem", fontWeight: 700, color: "var(--text-primary, #1c1917)", margin: "0 0 0.25rem 0" }}>
-                  Operational Equipment &amp; Risk Profile
-                </h2>
-                <p style={{ fontSize: "0.85rem", color: "var(--text-muted, #78716c)", margin: 0 }}>
-                  Select the specific equipment and compliance risks present in your facility to generate your custom templates.
-                </p>
+        {/* QUESTION 2: PRIMARY FACILITY NAME */}
+        {questionIdx === 2 && (
+          <div key="q-2" style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
+            <h1 className="onboard-anim-title">What is the name of your primary facility?</h1>
+            <p className="onboard-anim-sub">
+              Every audit scorecard, inspection log, and temperature record will be tagged under this location.
+            </p>
+
+            <div className="onboard-anim-card">
+              <div style={{ marginBottom: "20px" }}>
+                <label style={{ display: "block", fontSize: "13px", fontWeight: "600", color: "#333330", marginBottom: "8px" }}>
+                  Facility / Kitchen Name
+                </label>
+                <input
+                  type="text"
+                  value={facilityName}
+                  onChange={(e) => setFacilityName(e.target.value)}
+                  placeholder="e.g. Bandra Central Kitchen, Downtown Bistro..."
+                  autoFocus
+                  style={{ width: "100%", height: "48px", padding: "0 14px", border: "1.5px solid #DCD9D2", borderRadius: "8px", fontSize: "15px", outline: "none", background: "#FFFFFF", color: "#111111", boxSizing: "border-box" }}
+                />
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "1.25rem" }}>
-                {/* Modules Grid */}
-                <div>
-                  <label style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--text-secondary, #44403c)", marginBottom: "0.5rem", display: "block" }}>
-                    Select Relevant Equipment &amp; Stations
-                  </label>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "0.6rem" }}>
-                    {[
-                      { key: "hasColdStorage", label: "Commercial Cold Storage & Chillers", icon: "❄️", desc: "Walk-in & reach-in fridge temp logs (-18°C / +4°C)" },
-                      { key: "hasFryers", label: "Deep Fryers & Cooking Oil", icon: "🍟", desc: "Total Polar Compounds (TPC) & discard log" },
-                      { key: "hasDeliveryDispatch", label: "Delivery Dispatch & Bags", icon: "🛵", desc: "Thermal bag checks (>65°C / <5°C) & tamper seal verify" },
-                      { key: "hasEspressoBeverage", label: "Espresso Bar & Filtration", icon: "☕", desc: "Steam wand chemical purge, TDS & water filtration" },
-                      { key: "hasRawMaterialIntake", label: "Raw Material Receiving", icon: "📦", desc: "Supplier COA verification & raw batch quarantine" },
-                      { key: "hasPestControl", label: "Pest Traps & Bait Stations", icon: "🪤", desc: "UV fly trap & perimeter bait inspection log" },
-                    ].map((item) => {
-                      const active = modules[item.key as keyof typeof modules];
-                      return (
-                        <div
-                          key={item.key}
-                          onClick={() => toggleModule(item.key as keyof typeof modules)}
-                          style={{
-                            padding: "0.75rem 0.9rem",
-                            borderRadius: "10px",
-                            border: `1.5px solid ${active ? "#059669" : "var(--border, #e6dfd5)"}`,
-                            background: active ? "#ecfdf5" : "#ffffff",
-                            cursor: "pointer",
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "0.75rem",
-                            transition: "all 0.15s ease",
-                          }}
-                        >
-                          <span style={{ fontSize: "1.3rem" }}>{item.icon}</span>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: "0.85rem", fontWeight: 600, color: active ? "#065f46" : "#1c1917" }}>
-                              {item.label}
-                            </div>
-                            <div style={{ fontSize: "0.7rem", color: "#78716c", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                              {item.desc}
-                            </div>
-                          </div>
-                          <div style={{
-                            width: "18px",
-                            height: "18px",
-                            borderRadius: "4px",
-                            border: `1.5px solid ${active ? "#059669" : "#cbd5e1"}`,
-                            background: active ? "#059669" : "transparent",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            color: "white",
-                            fontSize: "11px",
-                            fontWeight: 700,
-                          }}>
-                            {active ? "✓" : ""}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <label style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--text-secondary, #44403c)", marginBottom: "0.3rem", display: "block" }}>
-                    Primary Facility / Kitchen Name *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={facilityName}
-                    onChange={(e) => setFacilityName(e.target.value)}
-                    placeholder="e.g. Indiranagar Central Kitchen"
-                    style={{
-                      padding: "0.65rem 0.85rem",
-                      borderRadius: "var(--radius-sm, 8px)",
-                      border: "1px solid var(--border, #e6dfd5)",
-                      fontSize: "0.9rem",
-                      width: "100%",
-                      background: "var(--bg-input, #ffffff)",
-                    }}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--text-secondary, #44403c)", marginBottom: "0.3rem", display: "block" }}>
-                    Operational Daily Shifts
-                  </label>
-                  <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginTop: "0.25rem" }}>
-                    {SHIFT_OPTIONS.map((shift) => {
-                      const isActive = selectedShifts.includes(shift);
-                      return (
-                        <button
-                          key={shift}
-                          type="button"
-                          onClick={() => toggleShift(shift)}
-                          style={{
-                            padding: "0.45rem 0.9rem",
-                            borderRadius: "9999px",
-                            fontSize: "0.8rem",
-                            fontWeight: 600,
-                            cursor: "pointer",
-                            border: `1.5px solid ${isActive ? "#059669" : "var(--border, #e6dfd5)"}`,
-                            background: isActive ? "#ecfdf5" : "#ffffff",
-                            color: isActive ? "#065f46" : "var(--text-secondary, #44403c)",
-                            transition: "var(--transition, 0.2s ease)",
-                          }}
-                        >
-                          {isActive ? "✓ " : ""}{shift} Shift
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <label style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--text-secondary, #44403c)", marginBottom: "0.3rem", display: "block" }}>
-                    WhatsApp Supervisor Alert Phone (Optional)
-                  </label>
-                  <input
-                    type="tel"
-                    value={contactPhone}
-                    onChange={(e) => setContactPhone(e.target.value)}
-                    placeholder="+91 98765 43210"
-                    style={{
-                      padding: "0.65rem 0.85rem",
-                      borderRadius: "var(--radius-sm, 8px)",
-                      border: "1px solid var(--border, #e6dfd5)",
-                      fontSize: "0.9rem",
-                      width: "100%",
-                      background: "var(--bg-input, #ffffff)",
-                    }}
-                  />
-                </div>
+              <div style={{ marginBottom: "24px" }}>
+                <label style={{ display: "block", fontSize: "13px", fontWeight: "600", color: "#333330", marginBottom: "8px" }}>
+                  Manager Contact Phone (Optional)
+                </label>
+                <input
+                  type="tel"
+                  value={contactPhone}
+                  onChange={(e) => setContactPhone(e.target.value)}
+                  placeholder="e.g. +91 98765 43210"
+                  style={{ width: "100%", height: "48px", padding: "0 14px", border: "1.5px solid #DCD9D2", borderRadius: "8px", fontSize: "15px", outline: "none", background: "#FFFFFF", color: "#111111", boxSizing: "border-box" }}
+                />
               </div>
 
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "2rem" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid #ECEAE5", paddingTop: "20px" }}>
                 <button
                   type="button"
-                  onClick={() => setStep(1)}
-                  className="modal-footer btn-secondary"
-                  style={{ border: "1px solid var(--border, #e6dfd5)", padding: "0.55rem 1.25rem", borderRadius: "8px", background: "white", cursor: "pointer" }}
+                  onClick={() => setQuestionIdx(1)}
+                  className="onboard-secondary-btn"
                 >
                   ← Back
                 </button>
                 <button
                   type="button"
-                  onClick={handleSavePreferencesAndContinue}
-                  disabled={saving || !facilityName.trim()}
-                  className="btn-create-primary"
-                  style={{ minWidth: "200px", justifyContent: "center" }}
+                  onClick={() => setQuestionIdx(3)}
+                  disabled={!facilityName.trim()}
+                  className="onboard-primary-btn"
                 >
-                  <span>{saving ? "Placing Templates..." : "Generate Templates & Continue →"}</span>
+                  Continue to Shifts →
                 </button>
               </div>
             </div>
-          )}
+          </div>
+        )}
 
-          {/* ─── STEP 3: Templates Placed & Dodo Subscription Activation ───── */}
-          {step === 3 && (
-            <div>
-              {/* Success Callout of placed templates */}
-              <div style={{
-                padding: "1rem 1.25rem",
-                borderRadius: "12px",
-                background: "#ecfdf5",
-                border: "1px solid #a7f3d0",
-                marginBottom: "1.5rem",
-              }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "#065f46", fontWeight: 700, fontSize: "0.95rem" }}>
-                  <span>🎉</span>
-                  <span>{placedTemplates.length || "Tailored"} Compliance Templates Placed in Your Account!</span>
-                </div>
-                <p style={{ margin: "0.4rem 0 0.75rem 0", fontSize: "0.8rem", color: "#047857", lineHeight: 1.45 }}>
-                  Based on your answers, our engine has custom-built your SOP sheets and pre-loaded them into your facility. You can inspect all templates for free.
-                </p>
+        {/* QUESTION 3: OPERATING SHIFTS */}
+        {questionIdx === 3 && (
+          <div key="q-3" style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
+            <h1 className="onboard-anim-title">What operating shifts do you run each day?</h1>
+            <p className="onboard-anim-sub">
+              Checklists will be scheduled and verified per shift. Select all shifts that operate at this location.
+            </p>
 
-                {placedTemplates.length > 0 && (
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem" }}>
-                    {placedTemplates.map((t) => (
-                      <span
-                        key={t.id}
-                        style={{
-                          background: "#ffffff",
-                          border: "1px solid #a7f3d0",
-                          color: "#065f46",
-                          padding: "0.25rem 0.6rem",
-                          borderRadius: "6px",
-                          fontSize: "0.75rem",
-                          fontWeight: 600,
-                        }}
-                      >
-                        📋 {t.title}
-                      </span>
-                    ))}
-                  </div>
-                )}
+            <div className="onboard-anim-card">
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "12px", marginBottom: "28px" }}>
+                {SHIFT_OPTIONS.map((shift) => {
+                  const isChecked = selectedShifts.includes(shift);
+                  return (
+                    <div
+                      key={shift}
+                      onClick={() => toggleShift(shift)}
+                      style={{
+                        padding: "16px 12px",
+                        textAlign: "center",
+                        borderRadius: "10px",
+                        border: "1.5px solid",
+                        borderColor: isChecked ? "#111111" : "#E2E0D8",
+                        background: isChecked ? "#111111" : "#FFFFFF",
+                        color: isChecked ? "#FFFFFF" : "#333330",
+                        cursor: "pointer",
+                        fontWeight: "600",
+                        fontSize: "14px",
+                        transition: "all 0.15s ease",
+                        userSelect: "none",
+                      }}
+                    >
+                      <div style={{ fontSize: "18px", marginBottom: "6px" }}>
+                        {shift === "Morning" ? "🌅" : shift === "Afternoon" ? "☀️" : shift === "Evening" ? "🌆" : "🌙"}
+                      </div>
+                      {shift}
+                    </div>
+                  );
+                })}
               </div>
 
-              {organization.billingStatus === "PAID" ? (
-                <>
-                  <div style={{ marginBottom: "1.5rem" }}>
-                    <div style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", padding: "0.25rem 0.6rem", borderRadius: "4px", background: "#f0fdf4", color: "#059669", fontSize: "0.78rem", fontWeight: 700, marginBottom: "0.5rem" }}>
-                      <span>✓</span>
-                      <span>Pro Subscription Active</span>
-                    </div>
-                    <h2 style={{ fontSize: "1.25rem", fontWeight: 700, color: "var(--text-primary, #1c1917)", margin: "0 0 0.25rem 0" }}>
-                      Your Workspace is Fully Activated!
-                    </h2>
-                    <p style={{ fontSize: "0.85rem", color: "var(--text-muted, #78716c)", margin: 0 }}>
-                      You have full access to submit daily shift reports, add team members, and customize regulatory audit sheets.
-                    </p>
-                  </div>
-
-                  <div style={{
-                    padding: "1.25rem",
-                    borderRadius: "var(--radius-md, 12px)",
-                    background: "#f0fdf4",
-                    border: "1px solid #a7f3d0",
-                    marginBottom: "1.5rem",
-                  }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <div>
-                        <div style={{ fontWeight: 700, color: "#065f46", fontSize: "1rem" }}>
-                          Annual Pro Compliance Plan
-                        </div>
-                        <div style={{ fontSize: "0.8rem", color: "#047857", marginTop: "0.2rem" }}>
-                          Full Operations &amp; Audit Access • Active
-                        </div>
-                      </div>
-                      <span className="plan-badge pro" style={{ fontSize: "0.75rem", padding: "0.25rem 0.6rem" }}>
-                        Active Plan
-                      </span>
-                    </div>
-                  </div>
-
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "1.5rem", flexWrap: "wrap", gap: "1rem" }}>
-                    <Link
-                      href="/admin/billing"
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "0.4rem",
-                        padding: "0.6rem 1rem",
-                        borderRadius: "8px",
-                        border: "1px solid var(--border, #e6dfd5)",
-                        background: "#ffffff",
-                        color: "var(--text-primary, #1c1917)",
-                        fontSize: "0.85rem",
-                        fontWeight: 600,
-                        textDecoration: "none",
-                      }}
-                    >
-                      <span>Receipts &amp; Invoices →</span>
-                    </Link>
-
-                    <button
-                      type="button"
-                      onClick={() => router.push("/dashboard")}
-                      className="btn-create-primary"
-                      style={{ minWidth: "220px", justifyContent: "center" }}
-                    >
-                      <span>Open Operations Dashboard →</span>
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div style={{ marginBottom: "1.25rem" }}>
-                    <div style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", padding: "0.2rem 0.5rem", borderRadius: "4px", background: "#f0fdf4", color: "#059669", fontSize: "0.75rem", fontWeight: 700, marginBottom: "0.4rem" }}>
-                      <span>🦤 Dodo Payments Official Gateway</span>
-                    </div>
-                    <h2 style={{ fontSize: "1.25rem", fontWeight: 700, color: "var(--text-primary, #1c1917)", margin: "0 0 0.25rem 0" }}>
-                      Activate Full Operations Access
-                    </h2>
-                    <p style={{ fontSize: "0.85rem", color: "var(--text-muted, #78716c)", margin: 0 }}>
-                      A paid subscription is required to submit daily shift reports, add team members, or modify audit sheets.
-                    </p>
-                  </div>
-
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "1rem" }}>
-                    {/* Monthly Plan */}
-                    <div
-                      onClick={() => setSelectedPlan("MONTHLY")}
-                      style={{
-                        padding: "1.25rem",
-                        borderRadius: "var(--radius-md, 12px)",
-                        border: `2px solid ${selectedPlan === "MONTHLY" ? "#059669" : "var(--border, #e6dfd5)"}`,
-                        background: selectedPlan === "MONTHLY" ? "#f0fdf4" : "#ffffff",
-                        cursor: "pointer",
-                        transition: "var(--transition, 0.2s ease)",
-                      }}
-                    >
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                        <div>
-                          <div style={{ fontWeight: 700, fontSize: "0.95rem", color: "#065f46" }}>
-                            {products.MONTHLY.name}
-                          </div>
-                          <div style={{ fontSize: "0.75rem", color: "var(--text-muted, #78716c)", marginTop: "0.15rem" }}>
-                            Monthly Flex
-                          </div>
-                        </div>
-                        <span className="plan-badge pro" style={{ fontSize: "0.65rem", padding: "0.15rem 0.45rem", borderRadius: "4px" }}>
-                          Monthly
-                        </span>
-                      </div>
-
-                      <div style={{ fontSize: "1.5rem", fontWeight: 800, margin: "0.6rem 0", color: "#059669" }}>
-                        ₹500 <span style={{ fontSize: "0.75rem", fontWeight: 500, color: "var(--text-muted, #78716c)" }}>/ month</span>
-                      </div>
-
-                      <ul style={{ fontSize: "0.78rem", color: "var(--text-secondary, #44403c)", paddingLeft: "1.1rem", lineHeight: 1.5, margin: "0.5rem 0" }}>
-                        <li>Submit daily shift audits &amp; checklists</li>
-                        <li>Digital supervisor sign-off</li>
-                        <li>Add team members &amp; roles</li>
-                      </ul>
-                    </div>
-
-                    {/* Annual Plan */}
-                    <div
-                      onClick={() => setSelectedPlan("ANNUAL")}
-                      style={{
-                        padding: "1.25rem",
-                        borderRadius: "var(--radius-md, 12px)",
-                        border: `2px solid ${selectedPlan === "ANNUAL" ? "#059669" : "var(--border, #e6dfd5)"}`,
-                        background: selectedPlan === "ANNUAL" ? "#f0fdf4" : "#ffffff",
-                        cursor: "pointer",
-                        position: "relative",
-                        transition: "var(--transition, 0.2s ease)",
-                      }}
-                    >
-                      <span style={{
-                        position: "absolute",
-                        top: "10px",
-                        right: "10px",
-                        background: "#dcfce7",
-                        color: "#166534",
-                        fontSize: "0.65rem",
-                        fontWeight: 700,
-                        padding: "0.15rem 0.45rem",
-                        borderRadius: "9999px",
-                      }}>
-                        Save ₹1,000 / yr
-                      </span>
-
-                      <div>
-                        <div style={{ fontWeight: 700, fontSize: "0.95rem", color: "#065f46" }}>
-                          {products.ANNUAL.name}
-                        </div>
-                        <div style={{ fontSize: "0.75rem", color: "var(--text-muted, #78716c)", marginTop: "0.15rem" }}>
-                          Annual Extended Plan
-                        </div>
-                      </div>
-
-                      <div style={{ fontSize: "1.5rem", fontWeight: 800, margin: "0.6rem 0", color: "#059669" }}>
-                        ₹5,000 <span style={{ fontSize: "0.75rem", fontWeight: 500, color: "var(--text-muted, #78716c)" }}>/ year</span>
-                      </div>
-
-                      <ul style={{ fontSize: "0.78rem", color: "var(--text-secondary, #44403c)", paddingLeft: "1.1rem", lineHeight: 1.5, margin: "0.5rem 0" }}>
-                        <li>Everything in Monthly Plan</li>
-                        <li>Priority regulatory audit export</li>
-                        <li>Full team access &amp; custom roles</li>
-                      </ul>
-                    </div>
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "2rem", flexWrap: "wrap", gap: "1rem" }}>
-                    <Link
-                      href="/dashboard"
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "0.4rem",
-                        padding: "0.6rem 1rem",
-                        borderRadius: "8px",
-                        border: "1px solid var(--border, #e6dfd5)",
-                        background: "#ffffff",
-                        color: "var(--text-primary, #1c1917)",
-                        fontSize: "0.85rem",
-                        fontWeight: 600,
-                        textDecoration: "none",
-                      }}
-                    >
-                      <span>📋 Inspect My Templates First →</span>
-                    </Link>
-
-                    <button
-                      type="button"
-                      onClick={handleProceedToDodoPayment}
-                      disabled={saving}
-                      className="btn-create-primary"
-                      style={{ minWidth: "220px", justifyContent: "center" }}
-                    >
-                      <span>{saving ? "Launching Dodo Checkout..." : `Subscribe with Dodo (${formatINR(products[selectedPlan].priceINR)})`}</span>
-                    </button>
-                  </div>
-                </>
-              )}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid #ECEAE5", paddingTop: "20px" }}>
+                <button
+                  type="button"
+                  onClick={() => setQuestionIdx(2)}
+                  className="onboard-secondary-btn"
+                >
+                  ← Back
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setQuestionIdx(4)}
+                  disabled={selectedShifts.length === 0}
+                  className="onboard-primary-btn"
+                >
+                  Continue to Risk Areas →
+                </button>
+              </div>
             </div>
-          )}
-        </div>
-      </div>
+          </div>
+        )}
+
+        {/* QUESTION 4: RISK MODULES */}
+        {questionIdx === 4 && (
+          <div key="q-4" style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
+            <h1 className="onboard-anim-title">Which food safety areas apply to your kitchen?</h1>
+            <p className="onboard-anim-sub">
+              We activate dedicated FDA & FSSAI logging modules for each selected area.
+            </p>
+
+            <div className="onboard-anim-card">
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "24px" }}>
+                {[
+                  { key: "hasColdStorage" as const, title: "Walk-In Chillers & Deep Freezers", desc: "Temperature compliance (-18°C to +4°C) with automated alert thresholds", icon: "❄️" },
+                  { key: "hasFryers" as const, title: "Deep Fryers & Cooking Oil Quality", desc: "Total Polar Compounds (TPC < 25%) and smoke point discard tracking", icon: "🍳" },
+                  { key: "hasDeliveryDispatch" as const, title: "Rider Dispatch & Tamper Bag Seals", desc: "Delivery handover temperature, packaging integrity, and timestamp logs", icon: "🛵" },
+                  { key: "hasEspressoBeverage" as const, title: "Espresso Machine, Steam Wand & Water", desc: "Group head flush, milk sanitization, and TDS hardness PPM records", icon: "☕" },
+                  { key: "hasRawMaterialIntake" as const, title: "Inbound Raw Material & Supplier QA", desc: "Supplier invoice, batch COA, expiry check, and quarantine status", icon: "📦" },
+                  { key: "hasPestControl" as const, title: "Pest Bait Stations & Fly Killers", desc: "Insect light trap (ILT) catch counts and bait station physical integrity", icon: "🪤" },
+                ].map((mod) => {
+                  const isActive = modules[mod.key];
+                  return (
+                    <div
+                      key={mod.key}
+                      onClick={() => toggleModule(mod.key)}
+                      className={`onboard-template-card ${isActive ? "selected" : ""}`}
+                    >
+                      <span style={{ fontSize: "20px" }}>{mod.icon}</span>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: "600", fontSize: "14.5px", color: "#111111" }}>{mod.title}</div>
+                        <div style={{ fontSize: "12.5px", color: "#666664" }}>{mod.desc}</div>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={isActive}
+                        onChange={() => {}}
+                        style={{ width: "18px", height: "18px", accentColor: "#111111", cursor: "pointer" }}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid #ECEAE5", paddingTop: "20px" }}>
+                <button
+                  type="button"
+                  onClick={() => setQuestionIdx(3)}
+                  className="onboard-secondary-btn"
+                >
+                  ← Back
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSavePreferencesAndProceedToPlan}
+                  disabled={saving}
+                  className="onboard-primary-btn"
+                >
+                  {saving ? "Configuring..." : "Continue to Plan Selection →"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* QUESTION 5: PLAN SELECTION & CHECKOUT */}
+        {questionIdx === 5 && (
+          <div key="q-5" style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
+            <h1 className="onboard-anim-title">Choose your compliance subscription</h1>
+            <p className="onboard-anim-sub">
+              Your workspace is tailored and ready. Select your billing plan to activate live daily checklists and team onboarding.
+            </p>
+
+            <div className="onboard-anim-card" style={{ maxWidth: "700px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "14px", marginBottom: "28px" }}>
+                {/* Monthly Plan */}
+                <div
+                  onClick={() => setSelectedPlan("MONTHLY")}
+                  style={{
+                    padding: "20px",
+                    borderRadius: "12px",
+                    border: "2px solid",
+                    borderColor: selectedPlan === "MONTHLY" ? "#111111" : "#E2E0D8",
+                    background: selectedPlan === "MONTHLY" ? "#FAF9F5" : "#FFFFFF",
+                    cursor: "pointer",
+                    transition: "all 0.16s ease",
+                  }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                    <span style={{ fontWeight: "600", fontSize: "16px", color: "#111111" }}>Monthly Plan</span>
+                    <div style={{ width: "18px", height: "18px", borderRadius: "50%", border: selectedPlan === "MONTHLY" ? "5px solid #111111" : "2px solid #CBC8C0" }} />
+                  </div>
+                  <div style={{ fontSize: "28px", fontWeight: "700", color: "#111111", marginBottom: "4px" }}>
+                    {formatINR(products.MONTHLY.priceINR)}
+                    <span style={{ fontSize: "14px", fontWeight: "500", color: "#666664" }}> / month</span>
+                  </div>
+                  <div style={{ fontSize: "13px", color: "#666664", lineHeight: "1.4", marginTop: "12px" }}>
+                    {products.MONTHLY.description}
+                  </div>
+                </div>
+
+                {/* Annual Plan */}
+                <div
+                  onClick={() => setSelectedPlan("ANNUAL")}
+                  style={{
+                    padding: "20px",
+                    borderRadius: "12px",
+                    border: "2px solid",
+                    borderColor: selectedPlan === "ANNUAL" ? "#111111" : "#E2E0D8",
+                    background: selectedPlan === "ANNUAL" ? "#FAF9F5" : "#FFFFFF",
+                    cursor: "pointer",
+                    position: "relative",
+                    transition: "all 0.16s ease",
+                  }}
+                >
+                  <span style={{ position: "absolute", top: "-10px", right: "16px", background: "#059669", color: "#FFFFFF", fontSize: "11px", fontWeight: "600", padding: "2px 8px", borderRadius: "10px" }}>
+                    SAVE ₹1,000 / YR
+                  </span>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                    <span style={{ fontWeight: "600", fontSize: "16px", color: "#111111" }}>Annual Plan</span>
+                    <div style={{ width: "18px", height: "18px", borderRadius: "50%", border: selectedPlan === "ANNUAL" ? "5px solid #111111" : "2px solid #CBC8C0" }} />
+                  </div>
+                  <div style={{ fontSize: "28px", fontWeight: "700", color: "#111111", marginBottom: "4px" }}>
+                    {formatINR(products.ANNUAL.priceINR)}
+                    <span style={{ fontSize: "14px", fontWeight: "500", color: "#666664" }}> / year</span>
+                  </div>
+                  <div style={{ fontSize: "13px", color: "#666664", lineHeight: "1.4", marginTop: "12px" }}>
+                    {products.ANNUAL.description}
+                  </div>
+                </div>
+              </div>
+
+              {/* Dodo Payments Trust Badge */}
+              <div style={{ background: "#F6F5F0", border: "1px solid #ECEAE5", borderRadius: "8px", padding: "12px 16px", display: "flex", alignItems: "center", gap: "10px", marginBottom: "24px" }}>
+                <span style={{ fontSize: "18px" }}>🔒</span>
+                <span style={{ fontSize: "13px", color: "#555550" }}>
+                  Secured & processed exclusively via <strong>Dodo Payments</strong>. Automated GST invoices, instant activation, and immediate post-payment team setup.
+                </span>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid #ECEAE5", paddingTop: "20px" }}>
+                <button
+                  type="button"
+                  onClick={() => setQuestionIdx(4)}
+                  className="onboard-secondary-btn"
+                >
+                  ← Back
+                </button>
+                <button
+                  type="button"
+                  onClick={handleProceedToDodoPayment}
+                  disabled={saving}
+                  className="onboard-primary-btn"
+                  style={{ minWidth: "240px" }}
+                >
+                  {saving ? "Launching Dodo Checkout..." : "Proceed to Payment via Dodo →"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </main>
     </div>
   );
 }

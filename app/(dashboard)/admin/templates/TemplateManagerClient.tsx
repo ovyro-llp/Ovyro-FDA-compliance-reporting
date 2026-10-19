@@ -32,6 +32,7 @@ interface Section {
 interface TemplateManagerClientProps {
   initialTemplates: any[];
   outlets: Array<{ id: string; name: string; icon: string; shifts?: string[] }>;
+  availableStaff?: string[];
 }
 
 function safeJson(val: any, fallback: any = {}) {
@@ -376,8 +377,16 @@ const PRESETS: Record<string, { title: string; category: string; icon: string; f
 export default function TemplateManagerClient({
   initialTemplates,
   outlets,
+  availableStaff,
 }: TemplateManagerClientProps) {
   const router = useRouter();
+  const staffOptions = useMemo(() => {
+    if (availableStaff && availableStaff.length > 0) {
+      return availableStaff;
+    }
+    return DEFAULT_STAFF;
+  }, [availableStaff]);
+
   const [templates, setTemplates] = useState<any[]>(initialTemplates);
   const [editingTemplate, setEditingTemplate] = useState<any | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -556,7 +565,7 @@ export default function TemplateManagerClient({
         {
           id: `item-${Date.now().toString().slice(-4)}`,
           name: "New Checkpoint Item",
-          defaultAssignee: DEFAULT_STAFF[0],
+          defaultAssignee: staffOptions[0],
           targetMinTemp: category === "TEMPERATURE" ? 2 : undefined,
           targetMaxTemp: category === "TEMPERATURE" ? 8 : undefined,
           referenceTemp: category === "TEMPERATURE" ? "+2 to +8°C" : undefined,
@@ -589,7 +598,7 @@ export default function TemplateManagerClient({
       id: `item-${Date.now().toString().slice(-4)}-${count}`,
       name: `Checkpoint #${count}`,
       itemType: defaultType,
-      defaultAssignee: DEFAULT_STAFF[0],
+      defaultAssignee: staffOptions[0],
       category: sec.title,
       targetMinTemp: defaultType === "TEMPERATURE" ? 2 : undefined,
       targetMaxTemp: defaultType === "TEMPERATURE" ? 8 : undefined,
@@ -661,14 +670,14 @@ export default function TemplateManagerClient({
           referenceTemp: "+2 to +8°C",
           targetMinTemp: 2,
           targetMaxTemp: 8,
-          defaultAssignee: DEFAULT_STAFF[idx % DEFAULT_STAFF.length],
+          defaultAssignee: staffOptions[idx % staffOptions.length],
         };
       }
       return {
         id: `item-${idx + 1}`,
         name,
         itemType: "STATUS",
-        defaultAssignee: DEFAULT_STAFF[idx % DEFAULT_STAFF.length],
+        defaultAssignee: staffOptions[idx % staffOptions.length],
         category: title,
       };
     });
@@ -1297,13 +1306,13 @@ export default function TemplateManagerClient({
                                 {/* Assignee */}
                                 <div className="item-assignee-col">
                                   <select
-                                    value={item.defaultAssignee || DEFAULT_STAFF[0]}
+                                    value={item.defaultAssignee || staffOptions[0]}
                                     onChange={(e) =>
                                       handleUpdateItem(secIdx, itemIdx, "defaultAssignee", e.target.value)
                                     }
                                     className="item-select"
                                   >
-                                    {DEFAULT_STAFF.map((st) => (
+                                    {staffOptions.map((st) => (
                                       <option key={st} value={st}>
                                         {st}
                                       </option>
