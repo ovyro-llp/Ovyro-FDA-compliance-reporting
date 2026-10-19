@@ -35,7 +35,7 @@ export default function PaywallModal({
         body: JSON.stringify({
           organizationId,
           planInterval: plan,
-          returnUrl: `${window.location.origin}/admin/billing?session_id={CHECKOUT_SESSION_ID}`,
+          returnUrl: `${window.location.origin}/onboard/setup?session_id={CHECKOUT_SESSION_ID}`,
         }),
       });
 

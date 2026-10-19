@@ -77,6 +77,97 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
+
+    if (body.action === "duplicate") {
+      const sourceOutletId = body.sourceOutletId;
+      if (!sourceOutletId) {
+        return NextResponse.json({ error: "sourceOutletId is required to duplicate" }, { status: 400 });
+      }
+
+      const sourceOutlet = await prisma.outlet.findFirst({
+        where: { id: sourceOutletId, organizationId },
+        include: {
+          outletTemplates: {
+            where: { isEnabled: true },
+            orderBy: { order: "asc" },
+          },
+        },
+      });
+
+      if (!sourceOutlet) {
+        return NextResponse.json({ error: "Source facility not found" }, { status: 404 });
+      }
+
+      const countCopies = await prisma.outlet.count({
+        where: {
+          organizationId,
+          name: { startsWith: `${sourceOutlet.name} (Copy` },
+        },
+      });
+
+      const copyName = countCopies > 0 ? `${sourceOutlet.name} (Copy ${countCopies + 1})` : `${sourceOutlet.name} (Copy)`;
+      const copyCode = sourceOutlet.code ? `${sourceOutlet.code}-C${countCopies + 1}`.slice(0, 10) : null;
+
+      const newOutlet = await prisma.outlet.create({
+        data: {
+          organizationId,
+          name: copyName,
+          code: copyCode,
+          type: sourceOutlet.type,
+          address: sourceOutlet.address,
+          icon: sourceOutlet.icon,
+          shifts: sourceOutlet.shifts,
+        },
+      });
+
+      // Clone assigned templates
+      for (const ot of sourceOutlet.outletTemplates) {
+        await prisma.outletTemplate.create({
+          data: {
+            outletId: newOutlet.id,
+            templateId: ot.templateId,
+            order: ot.order,
+            isEnabled: ot.isEnabled,
+          },
+        });
+      }
+
+      // Link creating user
+      if (validUserId) {
+        await prisma.userOutlet.upsert({
+          where: { userId_outletId: { userId: validUserId, outletId: newOutlet.id } },
+          update: {},
+          create: {
+            userId: validUserId,
+            outletId: newOutlet.id,
+            role: user.role,
+          },
+        });
+      }
+
+      const fullOutlet = await prisma.outlet.findUnique({
+        where: { id: newOutlet.id },
+        include: {
+          outletTemplates: {
+            include: {
+              template: {
+                select: { id: true, title: true, icon: true, category: true, slug: true },
+              },
+            },
+          },
+          _count: {
+            select: { submissions: true, userOutlets: true },
+          },
+        },
+      });
+
+      return NextResponse.json({
+        success: true,
+        message: `Facility duplicated successfully with ${sourceOutlet.outletTemplates.length} report templates.`,
+        outlet: { ...fullOutlet, shifts: safeJson(fullOutlet?.shifts) },
+      });
+    }
+
     const { name, code, type, address, icon, shifts, templateIds } = body;
 
     if (!name) {

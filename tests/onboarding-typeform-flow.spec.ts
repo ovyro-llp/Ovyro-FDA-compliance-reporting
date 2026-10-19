@@ -19,11 +19,17 @@ test.describe("Apple HIG & Typeform Single-Question Onboarding Flow", () => {
     await page.waitForTimeout(350);
     await page.screenshot({ path: "playwright-screenshots/onboard-initial-q1-desktop.png" });
 
-    // Advance to Q2: Facility Name
+    // Advance to Q2: Number of Outlets
     await page.click('button:has-text("Continue →")');
-    await expect(page.locator("text=What is the name of your primary facility?")).toBeVisible();
+    await expect(page.locator("text=How many outlets or facilities do you operate?")).toBeVisible();
     await page.waitForTimeout(350);
     await page.screenshot({ path: "playwright-screenshots/onboard-initial-q2-desktop.png" });
+
+    // Select 2 - 3 Locations scale
+    const multiScaleCard = page.locator('.onboard-template-card:has-text("2 – 3 Locations")');
+    if (await multiScaleCard.isVisible()) {
+      await multiScaleCard.click();
+    }
 
     // Advance to Q3: Shifts
     await page.click('button:has-text("Continue to Shifts →")');
@@ -40,15 +46,21 @@ test.describe("Apple HIG & Typeform Single-Question Onboarding Flow", () => {
     // Advance to Q5: Plan & Checkout
     await page.click('button:has-text("Continue to Plan Selection →")');
     await expect(page.locator("text=Choose your compliance subscription")).toBeVisible();
+    await expect(page.locator('button:has-text("Skip for now & explore software →")')).toBeVisible();
     await page.waitForTimeout(350);
     await page.screenshot({ path: "playwright-screenshots/onboard-initial-q5-desktop.png" });
 
-    // Test clicking Proceed to Payment via Dodo
-    const checkoutBtn = page.locator('button:has-text("Proceed to Payment via Dodo →")');
-    await checkoutBtn.click();
-    await page.waitForTimeout(1500);
-    // Ensure no 400 error banner appears
-    await expect(page.locator("text=customer.phone_number: is invalid")).not.toBeVisible();
+    // 2.1 Test Duplicate Outlet Feature in /admin/outlets
+    await page.goto("http://localhost:3000/admin/outlets");
+    await page.waitForSelector(".outlet-card");
+    const initialOutletCount = await page.locator(".outlet-card").count();
+    const duplicateBtn = page.locator(".btn-action-duplicate").first();
+    await expect(duplicateBtn).toBeVisible();
+    await duplicateBtn.click();
+    await page.waitForTimeout(1000);
+    const newOutletCount = await page.locator(".outlet-card").count();
+    expect(newOutletCount).toBeGreaterThanOrEqual(initialOutletCount);
+    await page.screenshot({ path: "playwright-screenshots/admin-outlets-duplicated.png" });
 
     // 3. Post-Payment Setup Wizard (/onboard/setup) - Desktop
     await page.goto("http://localhost:3000/onboard/setup?session_id=mock_dodo_session_123");

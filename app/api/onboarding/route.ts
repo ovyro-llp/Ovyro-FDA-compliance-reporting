@@ -16,12 +16,13 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { industryPreset, facilityName, shifts, contactPhone, modules } = body;
+    const { industryPreset, facilityName, shifts, contactPhone, modules, outletCount } = body;
+    const numOutlets = typeof outletCount === "number" && outletCount > 0 ? outletCount : 1;
 
     const org = await prisma.organization.findUnique({
       where: { id: user.organizationId },
       include: {
-        outlets: { take: 1 },
+        outlets: { take: 10 },
       },
     });
 
@@ -52,11 +53,12 @@ export async function POST(req: NextRequest) {
 
     // 1. Ensure or update primary outlet
     let primaryOutlet = org.outlets[0];
+    const defaultPrimaryName = numOutlets > 1 ? `${org.name} - Location 1` : (org.name ? `${org.name} - Main Facility` : "Main Kitchen / Facility");
     if (!primaryOutlet) {
       primaryOutlet = await prisma.outlet.create({
         data: {
           organizationId: org.id,
-          name: facilityName || "Main Kitchen / Facility",
+          name: facilityName || defaultPrimaryName,
           type: outletType,
           icon: outletIcon,
           shifts: JSON.stringify(shiftList),
@@ -72,6 +74,18 @@ export async function POST(req: NextRequest) {
           shifts: JSON.stringify(shiftList),
         },
       });
+    }
+
+    if (user.id) {
+      await prisma.userOutlet.upsert({
+        where: { userId_outletId: { userId: user.id, outletId: primaryOutlet.id } },
+        update: {},
+        create: {
+          userId: user.id,
+          outletId: primaryOutlet.id,
+          role: "ORG_ADMIN",
+        },
+      }).catch(() => {});
     }
 
     // 2. Generate and place tailored templates based on specific operational risk modules
@@ -96,12 +110,55 @@ export async function POST(req: NextRequest) {
       operationalAnswers
     );
 
+    // 2.5 Provision additional outlets if multi-outlet scale was specified
+    const existingCount = org.outlets.length;
+    const targetCount = Math.min(Math.max(numOutlets, 1), 10);
+    if (targetCount > existingCount) {
+      for (let i = existingCount + 1; i <= targetCount; i++) {
+        const nextOutlet = await prisma.outlet.create({
+          data: {
+            organizationId: org.id,
+            name: `${org.name} - Location ${i}`,
+            type: outletType,
+            icon: outletIcon,
+            shifts: JSON.stringify(shiftList),
+          },
+        });
+
+        // Link templates to this additional outlet
+        for (const [idx, tpl] of placedTemplates.entries()) {
+          await prisma.outletTemplate.create({
+            data: {
+              outletId: nextOutlet.id,
+              templateId: tpl.id,
+              order: idx,
+              isEnabled: true,
+            },
+          }).catch(() => {});
+        }
+
+        // Link user to outlet
+        if (user.id) {
+          await prisma.userOutlet.upsert({
+            where: { userId_outletId: { userId: user.id, outletId: nextOutlet.id } },
+            update: {},
+            create: {
+              userId: user.id,
+              outletId: nextOutlet.id,
+              role: "ORG_ADMIN",
+            },
+          }).catch(() => {});
+        }
+      }
+    }
+
     // 3. Update Organization Settings
     const currentSettings = typeof org.settings === "string" ? JSON.parse(org.settings || "{}") : (org.settings || {});
     const updatedSettings = {
       ...currentSettings,
       industryPreset: businessType,
       facilityName: operationalAnswers.facilityName,
+      outletCount: targetCount,
       modules: operationalAnswers.modules,
       shifts: shiftList,
       onboardingCompleted: true,

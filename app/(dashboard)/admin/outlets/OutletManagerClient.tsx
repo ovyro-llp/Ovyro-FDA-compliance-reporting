@@ -23,6 +23,35 @@ export default function OutletManagerClient({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successToast, setSuccessToast] = useState<string | null>(null);
+  const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
+
+  const handleDuplicate = async (outlet: any) => {
+    setDuplicatingId(outlet.id);
+    setError(null);
+    try {
+      const res = await fetch("/api/admin/outlets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "duplicate",
+          sourceOutletId: outlet.id,
+        }),
+      });
+
+      const json = await res.json();
+      if (!res.ok) {
+        throw new Error(json.error || "Failed to duplicate facility");
+      }
+
+      setOutlets((prev) => [...prev, json.outlet]);
+      refreshOutlets();
+      showToast(`✅ Facility "${outlet.name}" duplicated with all report tabs!`);
+    } catch (err: any) {
+      alert(err.message || "Failed to duplicate facility");
+    } finally {
+      setDuplicatingId(null);
+    }
+  };
 
   React.useEffect(() => {
     if (isModalOpen) {
@@ -269,6 +298,14 @@ export default function OutletManagerClient({
                   className="btn-action-edit"
                 >
                   ✏️ Edit Facility
+                </button>
+                <button
+                  onClick={() => handleDuplicate(outlet)}
+                  disabled={duplicatingId === outlet.id}
+                  className="btn-action-duplicate"
+                  title="Duplicate facility and copy all assigned report templates"
+                >
+                  {duplicatingId === outlet.id ? "Duplicating..." : "📋 Duplicate"}
                 </button>
                 {outlets.length > 1 && (
                   <button

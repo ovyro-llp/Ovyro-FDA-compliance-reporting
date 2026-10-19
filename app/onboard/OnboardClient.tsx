@@ -56,6 +56,44 @@ const PRESETS = [
   },
 ];
 
+const OUTLET_SCALES = [
+  {
+    count: 1,
+    title: "1 Location (Single Store / Facility)",
+    icon: "🏪",
+    badge: "Solo Facility",
+    desc: "Single restaurant, cafe, dark kitchen, or production plant.",
+  },
+  {
+    count: 2,
+    title: "2 – 3 Locations",
+    icon: "🏢",
+    badge: "Growing Brand",
+    desc: "Expanding business with 2 to 3 branch outlets.",
+  },
+  {
+    count: 5,
+    title: "4 – 5 Locations",
+    icon: "🏬",
+    badge: "Multi-Unit",
+    desc: "Standardized cross-outlet operations with central hygiene reports.",
+  },
+  {
+    count: 8,
+    title: "6 – 10 Locations",
+    icon: "🏙️",
+    badge: "Regional Fleet",
+    desc: "City-wide branch network with area manager oversight.",
+  },
+  {
+    count: 10,
+    title: "10+ Locations",
+    icon: "🌐",
+    badge: "Enterprise",
+    desc: "Large multi-city brand or franchise network.",
+  },
+];
+
 const SHIFT_OPTIONS = ["Morning", "Afternoon", "Evening", "Night"];
 
 export default function OnboardClient({ user, organization, products }: OnboardClientProps) {
@@ -63,16 +101,17 @@ export default function OnboardClient({ user, organization, products }: OnboardC
 
   // Single Question Index: 1 to 5
   // Q1: Business Type
-  // Q2: Primary Facility Name
+  // Q2: Number of Outlets
   // Q3: Operating Shifts
   // Q4: Food Safety Risk Modules
-  // Q5: Plan & Checkout
+  // Q5: Plan Selection & Checkout (with Skip Option)
   const [questionIdx, setQuestionIdx] = useState<number>(1);
 
   // Form State
   const [industry, setIndustry] = useState<"RESTAURANT" | "CLOUD_KITCHEN" | "CAFE" | "MANUFACTURING">("RESTAURANT");
+  const [outletCount, setOutletCount] = useState<number>(1);
   const [facilityName, setFacilityName] = useState(
-    organization.primaryOutlet?.name || `${organization.name} - Main Kitchen`
+    organization.primaryOutlet?.name || `${organization.name} - Location 1`
   );
   const [selectedShifts, setSelectedShifts] = useState<string[]>(["Morning", "Evening"]);
   const [modules, setModules] = useState({
@@ -129,7 +168,7 @@ export default function OnboardClient({ user, organization, products }: OnboardC
         if (questionIdx === 1) {
           e.preventDefault();
           setQuestionIdx(2);
-        } else if (questionIdx === 2 && facilityName.trim()) {
+        } else if (questionIdx === 2) {
           e.preventDefault();
           setQuestionIdx(3);
         } else if (questionIdx === 3 && selectedShifts.length > 0) {
@@ -140,7 +179,7 @@ export default function OnboardClient({ user, organization, products }: OnboardC
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [questionIdx, facilityName, selectedShifts]);
+  }, [questionIdx, selectedShifts]);
 
   // Advance from Q4 (Modules) to Q5 (Plan) by saving preferences to API
   const handleSavePreferencesAndProceedToPlan = async () => {
@@ -152,7 +191,8 @@ export default function OnboardClient({ user, organization, products }: OnboardC
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           industryPreset: industry,
-          facilityName,
+          outletCount,
+          facilityName: facilityName || `${organization.name} - Location 1`,
           shifts: selectedShifts,
           contactPhone,
           modules,
@@ -167,6 +207,36 @@ export default function OnboardClient({ user, organization, products }: OnboardC
     } catch (err: any) {
       setError(err.message || "Failed to update facility preferences");
     } finally {
+      setSaving(false);
+    }
+  };
+
+  // Action on Q5: Skip payment and preview templates directly in software
+  const handleSkipPayment = async () => {
+    setSaving(true);
+    setError("");
+    try {
+      const res = await fetch("/api/onboarding", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          industryPreset: industry,
+          outletCount,
+          facilityName: facilityName || `${organization.name} - Location 1`,
+          shifts: selectedShifts,
+          contactPhone,
+          modules,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to initialize workspace templates");
+      }
+
+      router.push("/dashboard");
+    } catch (err: any) {
+      setError(err.message || "Failed to redirect to software preview");
       setSaving(false);
     }
   };
@@ -290,40 +360,40 @@ export default function OnboardClient({ user, organization, products }: OnboardC
           </div>
         )}
 
-        {/* QUESTION 2: PRIMARY FACILITY NAME */}
+        {/* QUESTION 2: NUMBER OF OUTLETS */}
         {questionIdx === 2 && (
           <div key="q-2" style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
-            <h1 className="onboard-anim-title">What is the name of your primary facility?</h1>
+            <h1 className="onboard-anim-title">How many outlets or facilities do you operate?</h1>
             <p className="onboard-anim-sub">
-              Every audit scorecard, inspection log, and temperature record will be tagged under this location.
+              Select your facility scale. We configure multi-unit reporting and compliance dashboards automatically.
             </p>
 
             <div className="onboard-anim-card">
-              <div style={{ marginBottom: "20px" }}>
-                <label style={{ display: "block", fontSize: "13px", fontWeight: "600", color: "#333330", marginBottom: "8px" }}>
-                  Facility / Kitchen Name
-                </label>
-                <input
-                  type="text"
-                  value={facilityName}
-                  onChange={(e) => setFacilityName(e.target.value)}
-                  placeholder="e.g. Bandra Central Kitchen, Downtown Bistro..."
-                  autoFocus
-                  style={{ width: "100%", height: "48px", padding: "0 14px", border: "1.5px solid #DCD9D2", borderRadius: "8px", fontSize: "15px", outline: "none", background: "#FFFFFF", color: "#111111", boxSizing: "border-box" }}
-                />
-              </div>
-
-              <div style={{ marginBottom: "24px" }}>
-                <label style={{ display: "block", fontSize: "13px", fontWeight: "600", color: "#333330", marginBottom: "8px" }}>
-                  Manager Contact Phone (Optional)
-                </label>
-                <input
-                  type="tel"
-                  value={contactPhone}
-                  onChange={(e) => setContactPhone(e.target.value)}
-                  placeholder="e.g. +91 98765 43210"
-                  style={{ width: "100%", height: "48px", padding: "0 14px", border: "1.5px solid #DCD9D2", borderRadius: "8px", fontSize: "15px", outline: "none", background: "#FFFFFF", color: "#111111", boxSizing: "border-box" }}
-                />
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "24px" }}>
+                {OUTLET_SCALES.map((scale) => {
+                  const isSelected = outletCount === scale.count;
+                  return (
+                    <div
+                      key={scale.count}
+                      onClick={() => setOutletCount(scale.count)}
+                      className={`onboard-template-card ${isSelected ? "selected" : ""}`}
+                    >
+                      <div style={{ fontSize: "24px", marginTop: "2px" }}>{scale.icon}</div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+                          <span style={{ fontWeight: "600", fontSize: "15px", color: "#111111" }}>{scale.title}</span>
+                          <span style={{ fontSize: "11px", background: "#F0EEE9", color: "#666662", padding: "2px 6px", borderRadius: "4px", fontWeight: "500" }}>
+                            {scale.badge}
+                          </span>
+                        </div>
+                        <div style={{ fontSize: "13px", color: "#666664", lineHeight: "1.4" }}>
+                          {scale.desc}
+                        </div>
+                      </div>
+                      <div style={{ width: "20px", height: "20px", borderRadius: "50%", border: isSelected ? "5px solid #111111" : "2px solid #D2CFC7", background: "#FFFFFF", alignSelf: "center", boxSizing: "border-box" }} />
+                    </div>
+                  );
+                })}
               </div>
 
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid #ECEAE5", paddingTop: "20px" }}>
@@ -337,7 +407,6 @@ export default function OnboardClient({ user, organization, products }: OnboardC
                 <button
                   type="button"
                   onClick={() => setQuestionIdx(3)}
-                  disabled={!facilityName.trim()}
                   className="onboard-primary-btn"
                 >
                   Continue to Shifts →
@@ -545,7 +614,7 @@ export default function OnboardClient({ user, organization, products }: OnboardC
                 </span>
               </div>
 
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid #ECEAE5", paddingTop: "20px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid #ECEAE5", paddingTop: "20px", flexWrap: "wrap", gap: "12px" }}>
                 <button
                   type="button"
                   onClick={() => setQuestionIdx(4)}
@@ -553,15 +622,36 @@ export default function OnboardClient({ user, organization, products }: OnboardC
                 >
                   ← Back
                 </button>
-                <button
-                  type="button"
-                  onClick={handleProceedToDodoPayment}
-                  disabled={saving}
-                  className="onboard-primary-btn"
-                  style={{ minWidth: "240px" }}
-                >
-                  {saving ? "Launching Dodo Checkout..." : "Proceed to Payment via Dodo →"}
-                </button>
+                <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+                  <button
+                    type="button"
+                    onClick={handleSkipPayment}
+                    disabled={saving}
+                    className="onboard-secondary-btn"
+                    style={{
+                      padding: "10px 18px",
+                      borderRadius: "8px",
+                      fontSize: "14px",
+                      fontWeight: "600",
+                      color: "#444440",
+                      border: "1.5px solid #DCD9D2",
+                      background: "#FFFFFF",
+                      cursor: "pointer",
+                      transition: "all 0.15s ease",
+                    }}
+                  >
+                    Skip for now & explore software →
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleProceedToDodoPayment}
+                    disabled={saving}
+                    className="onboard-primary-btn"
+                    style={{ minWidth: "220px" }}
+                  >
+                    {saving ? "Launching Dodo Checkout..." : "Proceed to Payment via Dodo →"}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
