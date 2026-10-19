@@ -97,8 +97,8 @@ export default function UsersClient({
   customRoles: initialCustomRoles,
 }: UsersClientProps) {
   const router = useRouter();
-  const [users, setUsers] = useState<UserType[]>(initialUsers);
-  const [customRoles, setCustomRoles] = useState(initialCustomRoles);
+  const [users, setUsers] = useState<UserType[]>(Array.isArray(initialUsers) ? initialUsers : []);
+  const [customRoles, setCustomRoles] = useState(Array.isArray(initialCustomRoles) ? initialCustomRoles : []);
   const [activeTab, setActiveTab] = useState<"users" | "roles">("users");
 
   // User modal state
@@ -244,7 +244,8 @@ export default function UsersClient({
       const refreshRes = await fetch("/api/admin/users");
       if (refreshRes.ok) {
         const uList = await refreshRes.json();
-        setUsers(uList);
+        const validUsers = Array.isArray(uList) ? uList : (Array.isArray(uList.users) ? uList.users : []);
+        setUsers(validUsers);
       }
     } catch (err: any) {
       setAlert({ type: "error", msg: err.message || "Failed to save user" });
@@ -285,10 +286,10 @@ export default function UsersClient({
       if (!res.ok) throw new Error(json.error || "Failed to save role");
 
       if (editingRole) {
-        setCustomRoles((prev) => prev.map((r) => (r.id === editingRole.id ? json.role : r)));
+        setCustomRoles((prev) => (Array.isArray(prev) ? prev : []).map((r) => (r.id === editingRole.id ? json.role : r)));
         setAlert({ type: "success", msg: `✅ Role "${json.role.name}" updated successfully!` });
       } else {
-        setCustomRoles([...customRoles, json.role]);
+        setCustomRoles((prev) => [...(Array.isArray(prev) ? prev : []), json.role]);
         setAlert({ type: "success", msg: `✅ Role "${json.role.name}" created!` });
       }
 
@@ -316,7 +317,29 @@ export default function UsersClient({
       return;
     }
     if (res.ok) {
-      setUsers((u) => u.map((x) => (x.id === id ? { ...x, isActive: !current } : x)));
+      setUsers((prev) => (Array.isArray(prev) ? prev : []).map((x) => (x.id === id ? { ...x, isActive: !current } : x)));
+    }
+  };
+
+  const handleDeleteUser = async (userId: string, targetName: string) => {
+    if (!confirm(`Are you sure you want to remove team member "${targetName}"?`)) return;
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/admin/users?id=${userId}`, { method: "DELETE" });
+      const json = await res.json();
+      if (res.status === 402 || json.paywall) {
+        setShowPaywall(true);
+        return;
+      }
+      if (!res.ok) throw new Error(json.error || "Failed to remove user");
+
+      setUsers((prev) => (Array.isArray(prev) ? prev : []).filter((u) => u.id !== userId));
+      setAlert({ type: "success", msg: `✅ User "${targetName}" removed successfully.` });
+      router.refresh();
+    } catch (err: any) {
+      setAlert({ type: "error", msg: err.message || "Failed to delete user" });
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -366,14 +389,14 @@ export default function UsersClient({
           className={`tab-btn ${activeTab === "users" ? "active" : ""}`}
         >
           <IconUsers />
-          <span>Team Members ({users.length})</span>
+          <span>Team Members ({(Array.isArray(users) ? users : []).length})</span>
         </button>
         <button
           onClick={() => setActiveTab("roles")}
           className={`tab-btn ${activeTab === "roles" ? "active" : ""}`}
         >
           <IconShield />
-          <span>Dynamic Custom Roles ({customRoles.length})</span>
+          <span>Dynamic Custom Roles ({(Array.isArray(customRoles) ? customRoles : []).length})</span>
         </button>
       </div>
 
@@ -395,7 +418,7 @@ export default function UsersClient({
                 </tr>
               </thead>
               <tbody>
-                {users.map((u) => {
+                {(Array.isArray(users) ? users : []).map((u) => {
                   const assignedOutlets = (u.userOutlets || []).map((uo) => uo.outlet?.name).filter(Boolean);
                   const assignedTemplates = (u.templateAccess || []).map((ta) => ta.template?.title).filter(Boolean);
                   const roleDisplayName = u.customRole?.name || u.role;
@@ -464,6 +487,13 @@ export default function UsersClient({
                           >
                             {u.isActive ? "Deactivate" : "Activate"}
                           </button>
+                          <button
+                            onClick={() => handleDeleteUser(u.id, u.name)}
+                            className="btn-delete-item"
+                            title="Remove team member"
+                          >
+                            <IconTrash />
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -476,7 +506,7 @@ export default function UsersClient({
       ) : (
         /* Custom Roles Grid */
         <div className="templates-grid">
-          {customRoles.map((role) => (
+          {(Array.isArray(customRoles) ? customRoles : []).map((role) => (
             <div key={role.id} className="template-card">
               <div className="template-card-header">
                 <div className="template-icon-circle">
