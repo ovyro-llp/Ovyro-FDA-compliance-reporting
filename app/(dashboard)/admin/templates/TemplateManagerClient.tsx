@@ -1175,7 +1175,7 @@ export default function TemplateManagerClient({
                       <button
                         type="button"
                         onClick={handleAddCustomShift}
-                        className="btn-add-item-small"
+                        className="btn-add-shift"
                       >
                         ➕ Add
                       </button>
