@@ -223,39 +223,174 @@ function formatTimeSlot(timeStr: string) {
 
 function TouchTempSelect({
   value,
-  min,
-  max,
+  min = 2,
+  max = 8,
   onChange,
 }: {
   value?: string;
-  min: number;
-  max: number;
+  min?: number;
+  max?: number;
   onChange: (val: string) => void;
 }) {
+  const [isCustomMode, setIsCustomMode] = useState(false);
   const isNa = value === "N/A" || value === "NA";
   const numVal = parseFloat(value || "");
-  const isBreach = !isNa && !isNaN(numVal) && (numVal < min || numVal > max);
-  const isSafe = !isNa && !isNaN(numVal) && numVal >= min && numVal <= max;
+
+  const safeMin = Math.min(min ?? 2, max ?? 8);
+  const safeMax = Math.max(min ?? 2, max ?? 8);
+  const isBreach = !isNa && !isNaN(numVal) && (numVal < safeMin || numVal > safeMax);
+  const isSafe = !isNa && !isNaN(numVal) && numVal >= safeMin && numVal <= safeMax;
+
+  const span = safeMax - safeMin;
+  let step = 1;
+  if (span <= 4) step = 0.5;
+  else if (span <= 20) step = 1;
+  else if (span <= 50) step = 2;
+  else step = 5;
+
+  const formatDec = (n: number) => {
+    return Number.isInteger(n) ? String(n) : n.toFixed(1);
+  };
+
+  const safeOptions: Array<{ val: string; num: number; label: string }> = [];
+  const mid = Math.round(((safeMin + safeMax) / 2) * 10) / 10;
+
+  for (let t = safeMin; t <= safeMax + 0.0001; t += step) {
+    const rounded = Math.round(t * 10) / 10;
+    const signStr = rounded > 0 ? `+${formatDec(rounded)}` : `${formatDec(rounded)}`;
+    let tag = "";
+    if (Math.abs(rounded - safeMin) < 0.001) tag = " (Min Safe)";
+    else if (Math.abs(rounded - safeMax) < 0.001) tag = " (Max Safe)";
+    else if (Math.abs(rounded - mid) < 0.001) tag = " (Optimal)";
+
+    safeOptions.push({
+      val: formatDec(rounded),
+      num: rounded,
+      label: `${signStr}°C${tag}`,
+    });
+  }
+
+  // Warning/breach options just outside range
+  const breachOptions: Array<{ val: string; num: number; label: string }> = [];
+  for (let i = 2; i >= 1; i--) {
+    const bVal = Math.round((safeMin - i * step) * 10) / 10;
+    const signStr = bVal > 0 ? `+${formatDec(bVal)}` : `${formatDec(bVal)}`;
+    breachOptions.push({
+      val: formatDec(bVal),
+      num: bVal,
+      label: `⚠️ ${signStr}°C (Critical Cold)`,
+    });
+  }
+  for (let i = 1; i <= 2; i++) {
+    const bVal = Math.round((safeMax + i * step) * 10) / 10;
+    const signStr = bVal > 0 ? `+${formatDec(bVal)}` : `${formatDec(bVal)}`;
+    breachOptions.push({
+      val: formatDec(bVal),
+      num: bVal,
+      label: `⚠️ ${signStr}°C (Critical Warm)`,
+    });
+  }
+
+  const allKnown = [...safeOptions, ...breachOptions];
+  const matchedOpt = !isNa && value !== "" && value !== undefined
+    ? allKnown.find((opt) => Math.abs(opt.num - numVal) < 0.05)
+    : null;
+
+  const currentSelectVal = isNa ? "NA" : (isCustomMode || (value && !matchedOpt) ? "CUSTOM" : (matchedOpt ? matchedOpt.val : ""));
 
   return (
     <div className="notion-temp-wrap">
       <div className={`notion-temp-box ${isBreach ? "breach" : isSafe ? "safe" : ""}`}>
-        <input
-          type="text"
-          inputMode="decimal"
-          placeholder={isNa ? "N/A" : `${min} to ${max}`}
-          value={isNa ? "" : (value ?? "")}
-          disabled={isNa}
-          onChange={(e) => onChange(e.target.value)}
-          className="notion-temp-input"
-        />
-        <span className="notion-temp-unit">°C</span>
+        {isCustomMode || (value && !matchedOpt && !isNa && value !== "") ? (
+          <div style={{ display: "flex", alignItems: "center", width: "100%", gap: "4px" }}>
+            <input
+              type="number"
+              step="any"
+              placeholder={`${safeMin} to ${safeMax}`}
+              value={isNa ? "" : (value ?? "")}
+              disabled={isNa}
+              onChange={(e) => onChange(e.target.value)}
+              className="notion-temp-input"
+              autoFocus
+            />
+            <span className="notion-temp-unit">°C</span>
+            <button
+              type="button"
+              onClick={() => {
+                setIsCustomMode(false);
+                if (!matchedOpt && safeOptions.length > 0) {
+                  onChange(safeOptions[Math.floor(safeOptions.length / 2)].val);
+                }
+              }}
+              title="Switch back to dropdown selection"
+              style={{
+                border: "none",
+                background: "transparent",
+                color: "#7D7A75",
+                fontSize: "12px",
+                cursor: "pointer",
+                padding: "2px 4px",
+                whiteSpace: "nowrap",
+              }}
+            >
+              ▼ Dropdown
+            </button>
+          </div>
+        ) : (
+          <div style={{ display: "flex", alignItems: "center", width: "100%" }}>
+            <select
+              value={currentSelectVal}
+              disabled={isNa}
+              onChange={(e) => {
+                const sel = e.target.value;
+                if (sel === "NA") {
+                  onChange("N/A");
+                } else if (sel === "CUSTOM") {
+                  setIsCustomMode(true);
+                } else {
+                  setIsCustomMode(false);
+                  onChange(sel);
+                }
+              }}
+              className="notion-temp-select"
+            >
+              <option value="" disabled>
+                Choose Temp ({safeMin > 0 ? `+${safeMin}` : safeMin}°C to {safeMax > 0 ? `+${safeMax}` : safeMax}°C)...
+              </option>
+              <optgroup label="✅ Safe Range (Click to Select)">
+                {safeOptions.map((opt) => (
+                  <option key={opt.val} value={opt.val}>
+                    {opt.label}
+                  </option>
+                ))}
+              </optgroup>
+              <optgroup label="⚠️ Critical Breach (Out of Range)">
+                {breachOptions.map((opt) => (
+                  <option key={opt.val} value={opt.val}>
+                    {opt.label}
+                  </option>
+                ))}
+              </optgroup>
+              <option value="CUSTOM">✏️ Custom Reading (Type manually)...</option>
+              <option value="NA">— Not In Use / N/A</option>
+            </select>
+          </div>
+        )}
       </div>
 
       <button
         type="button"
-        onClick={() => onChange(isNa ? "" : "N/A")}
+        onClick={() => {
+          if (isNa) {
+            setIsCustomMode(false);
+            const defaultMid = safeOptions[Math.floor(safeOptions.length / 2)]?.val || "0";
+            onChange(defaultMid);
+          } else {
+            onChange("N/A");
+          }
+        }}
         className={`notion-temp-na-btn ${isNa ? "active" : ""}`}
+        title="Toggle N/A"
       >
         N/A
       </button>

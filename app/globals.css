@@ -6402,6 +6402,29 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
   color: #B5332E;
 }
 
+.notion-temp-select {
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #2C2C2B;
+  font-size: 13.5px;
+  font-weight: 600;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  padding-right: 4px;
+  cursor: pointer;
+  appearance: auto;
+}
+
+.notion-temp-box.safe .notion-temp-select {
+  color: #1F6B45;
+}
+
+.notion-temp-box.breach .notion-temp-select {
+  color: #B5332E;
+}
+
 .notion-temp-unit {
   font-size: 11.5px;
   font-weight: 600;
