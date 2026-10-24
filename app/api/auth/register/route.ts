@@ -33,44 +33,24 @@ export async function POST(req: NextRequest) {
     const orgSlug = `${resolvedOrgName.toLowerCase().replace(/[^a-z0-9]/g, "-")}-${Date.now().toString().slice(-4)}`;
     const resolvedOutletName = (outletName || "Main Kitchen").trim();
 
-    const oneYearFromNow = new Date();
-    oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
-    const initialSubId = `sub_active_${Date.now()}`;
-
-    // 1. Create Organization (Defaulting to subscribed PRO plan)
+    // 1. Create Organization (Starts in PENDING subscription preview state)
     const organization = await prisma.organization.create({
       data: {
         name: resolvedOrgName,
         slug: orgSlug,
         plan: "PRO",
-        billingStatus: "PAID",
+        billingStatus: "PENDING",
         billingInterval: "ANNUAL",
         monthlyFee: 5000,
-        dodoSubscriptionId: initialSubId,
-        nextBillingDate: oneYearFromNow,
-        lastPaymentDate: new Date(),
+        dodoSubscriptionId: null,
+        nextBillingDate: null,
+        lastPaymentDate: null,
         status: "ACTIVE",
         settings: JSON.stringify({
           timezone: "Asia/Kolkata",
           currency: "INR",
           shifts: ["Morning", "Evening", "Night"],
         }),
-      },
-    });
-
-    // Create Initial Paid Billing Receipt
-    await prisma.clientBilling.create({
-      data: {
-        organizationId: organization.id,
-        amount: 5000,
-        currency: "INR",
-        billingCycle: "ANNUAL",
-        status: "PAID",
-        paidAt: new Date(),
-        paymentMethod: "DODO_PAYMENTS",
-        invoiceNumber: `INV-DODO-${Math.floor(100000 + Math.random() * 900000)}`,
-        dodoSubscriptionId: initialSubId,
-        notes: "Pro Compliance Plan - Active",
       },
     });
 

@@ -1,9 +1,14 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Reporting SaaS | Audit & Compliance Management",
+  title: "OVYRO | Audit & Compliance Management",
   description: "Universal Digital Hygiene, Safety & Compliance Reporting System",
+  icons: {
+    icon: "/icon.png",
+    apple: "/apple-touch-icon.png",
+  },
 };
 
 export const viewport: Viewport = {
@@ -17,7 +22,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" data-scroll-behavior="smooth" suppressHydrationWarning>
       <head>
-        <script
+        <Script
+          id="perf-timing-fix"
+          strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
@@ -27,7 +34,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                     try {
                       return _orig(name, startOrOpts, endMark);
                     } catch (e) {
-                      // Prevent Next.js Turbopack dev-timing clock skew from throwing negative time stamp TypeErrors
                       return undefined;
                     }
                   };

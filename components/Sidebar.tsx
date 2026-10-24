@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { useOutlet } from "./OutletContext";
@@ -62,18 +63,14 @@ export default function Sidebar({ user, sheetStatuses = {} }: SidebarProps) {
   const userName = user?.name || user?.email || "User";
   const userRoleDisplay = user?.customRoleTitle || user?.role || "STAFF";
 
-  const initials =
-    userName
-      .split(" ")
-      .filter(Boolean)
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2) || "U";
-
-  useEffect(() => {
-    setMobileOpen(false);
-  }, [pathname]);
+  const initials = useMemo(() => {
+    const raw = (user?.name || user?.email || "User").trim();
+    const parts = raw.split(/\s+/).filter(Boolean);
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return (raw.slice(0, 2) || "U").toUpperCase();
+  }, [user?.name, user?.email]);
 
   const templates = activeOutlet?.templates || [];
 
@@ -103,8 +100,15 @@ export default function Sidebar({ user, sheetStatuses = {} }: SidebarProps) {
             </button>
 
             <Link href="/dashboard" className="mobile-brand" onClick={() => setMobileOpen(false)}>
-              <span className="brand-icon flex items-center justify-center text-blue-600">
-                <ShieldCheck size={20} />
+              <span className="brand-icon flex items-center justify-center">
+                <Image
+                  src="/logo.png"
+                  alt="OVYRO Logo"
+                  width={26}
+                  height={26}
+                  className="w-6 h-6 object-contain"
+                  priority
+                />
               </span>
               <span className="brand-text">OVYRO</span>
             </Link>
@@ -132,8 +136,16 @@ export default function Sidebar({ user, sheetStatuses = {} }: SidebarProps) {
       <nav className={`sidebar ${mobileOpen ? "open" : ""}`}>
         <div className="sidebar-logo">
           <div className="sidebar-logo-header">
-            <h1 className="flex items-center gap-2">
-              <ShieldCheck className="text-blue-600" size={24} /> OVYRO
+            <h1 className="flex items-center gap-2.5">
+              <Image
+                src="/logo.png"
+                alt="OVYRO Logo"
+                width={28}
+                height={28}
+                className="w-7 h-7 object-contain"
+                priority
+              />
+              <span>OVYRO</span>
             </h1>
             <button
               className="sidebar-close-btn mobile-only"
@@ -272,9 +284,9 @@ export default function Sidebar({ user, sheetStatuses = {} }: SidebarProps) {
         {/* User Info & Log out */}
         <div className="sidebar-footer">
           <div className="user-profile-widget">
-            <div className="user-avatar-circle">{initials}</div>
+            <div className="user-avatar-circle" suppressHydrationWarning>{initials}</div>
             <div className="user-meta">
-              <span className="user-name">{userName}</span>
+              <span className="user-name" suppressHydrationWarning>{userName}</span>
               <span className="user-role-badge" title={userRoleDisplay}>{userRoleDisplay}</span>
             </div>
           </div>

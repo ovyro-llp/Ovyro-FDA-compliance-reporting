@@ -279,6 +279,14 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: "Outlet id is required" }, { status: 400 });
     }
 
+    const existingOutlet = await prisma.outlet.findFirst({
+      where: { id, organizationId },
+    });
+
+    if (!existingOutlet) {
+      return NextResponse.json({ error: "Outlet not found" }, { status: 404 });
+    }
+
     const updateData: any = {};
     if (name !== undefined) updateData.name = name;
     if (code !== undefined) updateData.code = code || null;
@@ -369,6 +377,14 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: "Outlet id is required" }, { status: 400 });
     }
 
+    const existingOutlet = await prisma.outlet.findFirst({
+      where: { id, organizationId },
+    });
+
+    if (!existingOutlet) {
+      return NextResponse.json({ error: "Facility not found" }, { status: 404 });
+    }
+
     // Check count of remaining active outlets
     const count = await prisma.outlet.count({
       where: { organizationId, isActive: true },
@@ -381,10 +397,28 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    // Delete mappings & outlet
+    // Check if facility has historical inspection submissions
+    const submissionCount = await prisma.formSubmission.count({
+      where: { outletId: id },
+    });
+
+    if (submissionCount > 0) {
+      // Soft-delete to preserve regulatory compliance audit trails
+      await prisma.outletTemplate.deleteMany({ where: { outletId: id } });
+      await prisma.userOutlet.deleteMany({ where: { outletId: id } });
+      await prisma.outlet.update({
+        where: { id },
+        data: { isActive: false },
+      });
+      return NextResponse.json({
+        success: true,
+        message: "Facility archived and unlinked (historical audit logs preserved)",
+      });
+    }
+
+    // Delete mappings & outlet if no audit history
     await prisma.outletTemplate.deleteMany({ where: { outletId: id } });
     await prisma.userOutlet.deleteMany({ where: { outletId: id } });
-    await prisma.formSubmission.deleteMany({ where: { outletId: id } });
     await prisma.outlet.delete({ where: { id } });
 
     return NextResponse.json({ success: true, message: "Facility deleted successfully" });

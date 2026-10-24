@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { NextRequest, NextResponse } from "next/server";
-import { isPlatformOwner } from "@/lib/permissions";
+import { isPlatformOwner, userHasPermission } from "@/lib/permissions";
 import { createDodoCheckoutSession, DODO_CONFIG } from "@/lib/dodo";
 
 export async function POST(req: NextRequest) {
@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const user = session.user as { role?: string; email?: string; organizationId?: string };
+  const user = session.user as { role?: string; email?: string; organizationId?: string; permissions?: string[] };
 
   try {
     const body = await req.json();
@@ -21,9 +21,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Organization ID is required" }, { status: 400 });
     }
 
+    const isPlatform = isPlatformOwner(user);
+    const isOrgAdmin =
+      user.role === "ORG_ADMIN" ||
+      user.role === "SUPER_ADMIN" ||
+      user.role === "ADMIN" ||
+      userHasPermission(user.permissions, "manage_organization", user.role);
+
     // RBAC: Platform owner can generate checkout for any tenant; tenant admins can only generate for their own org
-    if (!isPlatformOwner(user) && user.organizationId !== targetOrgId) {
-      return NextResponse.json({ error: "Forbidden: Cannot initiate billing for another organization" }, { status: 403 });
+    if (!isPlatform && (!isOrgAdmin || user.organizationId !== targetOrgId)) {
+      return NextResponse.json({ error: "Forbidden: Administrative billing access required" }, { status: 403 });
     }
 
     const org = await prisma.organization.findUnique({

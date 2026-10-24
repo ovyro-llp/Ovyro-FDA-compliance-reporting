@@ -230,15 +230,36 @@ export async function DELETE(
   const { id } = await params;
 
   try {
+    const existing = await prisma.formTemplate.findFirst({
+      where: { id, organizationId },
+    });
+
+    if (!existing) {
+      return NextResponse.json({ error: "Report tab not found" }, { status: 404 });
+    }
+
+    // Check for historical submissions to protect regulatory compliance trails
+    const submissionCount = await prisma.formSubmission.count({
+      where: { templateId: id },
+    });
+
+    if (submissionCount > 0) {
+      return NextResponse.json(
+        {
+          error:
+            "Cannot delete a report tab that has historical audit records. Please archive it instead to preserve regulatory compliance trails.",
+        },
+        { status: 400 }
+      );
+    }
+
     // 1. Delete associated outlet links
     await prisma.outletTemplate.deleteMany({ where: { templateId: id } });
     // 2. Delete user template access links
     await prisma.userTemplateAccess.deleteMany({ where: { templateId: id } });
-    // 3. Delete form submissions for this template
-    await prisma.formSubmission.deleteMany({ where: { templateId: id } });
-    // 4. Delete the template itself
-    await prisma.formTemplate.deleteMany({
-      where: { id, organizationId },
+    // 3. Delete the template itself
+    await prisma.formTemplate.delete({
+      where: { id },
     });
 
     return NextResponse.json({ success: true, message: "Report Tab deleted successfully" });

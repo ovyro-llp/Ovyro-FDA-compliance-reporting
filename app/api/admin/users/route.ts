@@ -208,6 +208,29 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "User not found or access denied" }, { status: 404 });
   }
 
+  // Self-lockout & demotion guards
+  if (session.user.id === id) {
+    if (isActive === false) {
+      return NextResponse.json({ error: "Cannot deactivate your own user account" }, { status: 400 });
+    }
+    if (role !== undefined && role !== "ORG_ADMIN" && existingUser.role === "ORG_ADMIN") {
+      const otherAdmins = await prisma.user.count({
+        where: {
+          organizationId,
+          role: "ORG_ADMIN",
+          isActive: true,
+          id: { not: id },
+        },
+      });
+      if (otherAdmins === 0) {
+        return NextResponse.json(
+          { error: "Cannot demote the sole active administrator of this organization" },
+          { status: 400 }
+        );
+      }
+    }
+  }
+
   const updateData: any = {};
   if (name !== undefined) updateData.name = name;
   if (role !== undefined) updateData.role = role;
@@ -320,11 +343,27 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
 
-  // Cascade cleanup relations
+  // Cascade cleanup outlet and template relations
   await prisma.userOutlet.deleteMany({ where: { userId: id } });
   await prisma.userTemplateAccess.deleteMany({ where: { userId: id } });
-  await prisma.user.delete({ where: { id } });
 
+  // If user has historical inspection submissions, soft-delete to preserve regulatory compliance audit logs
+  const submissionCount = await prisma.formSubmission.count({
+    where: { submittedById: id },
+  });
+
+  if (submissionCount > 0) {
+    await prisma.user.update({
+      where: { id },
+      data: { isActive: false },
+    });
+    return NextResponse.json({
+      success: true,
+      message: "User deactivated and unlinked from facilities (historical audit logs preserved)",
+    });
+  }
+
+  await prisma.user.delete({ where: { id } });
   return NextResponse.json({ success: true, message: "User removed successfully" });
 }
 

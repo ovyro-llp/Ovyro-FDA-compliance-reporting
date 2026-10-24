@@ -106,8 +106,17 @@ export async function POST(req: NextRequest) {
       }
 
       if (org) {
-        const nextMonth = new Date();
-        nextMonth.setMonth(nextMonth.getMonth() + 1);
+        const isAnnual =
+          org.billingInterval === "ANNUAL" ||
+          org.dodoProductId === DODO_CONFIG.products.ANNUAL.id ||
+          payment.metadata?.planInterval === "ANNUAL";
+
+        const nextBilling = new Date();
+        if (isAnnual) {
+          nextBilling.setFullYear(nextBilling.getFullYear() + 1);
+        } else {
+          nextBilling.setMonth(nextBilling.getMonth() + 1);
+        }
 
         const fee = payment.total_amount ? payment.total_amount / 100 : org.monthlyFee;
 
@@ -117,7 +126,7 @@ export async function POST(req: NextRequest) {
             billingStatus: "PAID",
             status: "ACTIVE",
             lastPaymentDate: new Date(),
-            nextBillingDate: nextMonth,
+            nextBillingDate: nextBilling,
             paymentProvider: "DODO_PAYMENTS",
             ...(subId ? { dodoSubscriptionId: subId } : {}),
           },

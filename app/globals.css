@@ -1027,6 +1027,26 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
 .login-logo {
   text-align: center;
   margin-bottom: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.login-logo-img-wrap {
+  width: 76px;
+  height: 76px;
+  margin: 0 auto 0.85rem auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.login-logo-img-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
 }
 
 .login-logo-icon {
@@ -7974,4 +7994,45 @@ body:has(.notion-submit-bar) .mobile-bottom-nav {
   font-weight: 600;
   color: #555550;
 }
+
+/* ─── Official Print Letterhead & Report Formatting ─────────────────────────── */
+.print-only-header {
+  display: none;
+}
+
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #0f172a !important;
+  }
+  .sidebar,
+  .mobile-topbar,
+  .header-actions-group,
+  .reports-filter-card,
+  .reports-kpi-grid,
+  .sidebar-backdrop,
+  .admin-header-row {
+    display: none !important;
+  }
+  .print-only-header {
+    display: block !important;
+  }
+  .admin-page-container {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+  }
+  .main-content {
+    margin-left: 0 !important;
+    padding: 0 !important;
+  }
+  .reports-table-card {
+    border: none !important;
+    box-shadow: none !important;
+  }
+  .reports-table {
+    font-size: 11px !important;
+  }
+}
+
 

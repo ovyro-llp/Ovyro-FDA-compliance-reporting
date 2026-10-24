@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
+import Image from "next/image";
 import { formatDate } from "@/lib/permissions";
 
 interface SubmissionsRecord {
@@ -253,33 +254,63 @@ export default function ReportsClient({
       "Corrective Action",
     ];
 
+    const sanitizeCell = (val: string | number | null | undefined): string => {
+      let str = String(val ?? "");
+      // Prevent CSV formula injection in spreadsheet software (CWE-1236)
+      if (/^[=+\-@\t\r]/.test(str)) {
+        str = `'${str}`;
+      }
+      return `"${str.replace(/"/g, '""')}"`;
+    };
+
     const rows = filtered.map((sub) => [
-      sub.date,
-      `"${sub.outlet?.name || ""}"`,
-      `"${sub.template?.title || ""}"`,
-      sub.template?.category || "",
-      sub.shift || "General",
-      `${sub.complianceScore ?? 100}%`,
-      `"${sub.submittedBy?.name || ""}"`,
-      `"${sub.supervisorName || ""}"`,
-      sub.supervisorSigned ? "Yes" : "No",
-      sub.status,
-      `"${(sub.comments || "").replace(/"/g, '""')}"`,
-      `"${(sub.correctiveAction || "").replace(/"/g, '""')}"`,
+      sanitizeCell(sub.date),
+      sanitizeCell(sub.outlet?.name),
+      sanitizeCell(sub.template?.title),
+      sanitizeCell(sub.template?.category),
+      sanitizeCell(sub.shift || "General"),
+      sanitizeCell(`${sub.complianceScore ?? 100}%`),
+      sanitizeCell(sub.submittedBy?.name),
+      sanitizeCell(sub.supervisorName),
+      sanitizeCell(sub.supervisorSigned ? "Yes" : "No"),
+      sanitizeCell(sub.status),
+      sanitizeCell(sub.comments),
+      sanitizeCell(sub.correctiveAction),
     ]);
 
-    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map((e) => e.join(","))].join("\n");
-    const encodedUri = encodeURI(csvContent);
+    const csvContent = [headers.map((h) => `"${h}"`).join(","), ...rows.map((e) => e.join(","))].join("\r\n");
+    // UTF-8 BOM ensures Excel properly parses special characters and accents
+    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+    const blobUrl = URL.createObjectURL(blob);
+
     const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
+    link.setAttribute("href", blobUrl);
     link.setAttribute("download", `Audit_Compliance_Report_${dateFrom}_to_${dateTo}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(blobUrl);
   };
 
   return (
     <div className="admin-page-container">
+      {/* Official Print Letterhead Header with Logo */}
+      <div className="print-only-header">
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "2px solid #0f172a", paddingBottom: "12px", marginBottom: "16px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <Image src="/logo.png" alt="OVYRO Logo" width={44} height={44} className="w-11 h-11 object-contain" />
+            <div>
+              <h1 style={{ fontSize: "20px", fontWeight: "800", margin: 0, color: "#0f172a", letterSpacing: "-0.02em" }}>OVYRO Compliance & Audit Report</h1>
+              <p style={{ fontSize: "12px", color: "#64748b", margin: 0 }}>Official Digital Hygiene, Safety & Regulatory Verification Record</p>
+            </div>
+          </div>
+          <div style={{ textAlign: "right", fontSize: "11px", color: "#64748b" }}>
+            <div><strong>Generated:</strong> {new Date().toLocaleDateString("en-IN", { dateStyle: "medium" })}</div>
+            <div><strong>Classification:</strong> Verified Compliance Trail</div>
+          </div>
+        </div>
+      </div>
+
       {/* Header */}
       <div className="admin-header-row">
         <div>

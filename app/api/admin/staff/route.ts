@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { NextRequest, NextResponse } from "next/server";
 import { resolveOrganizationId, userHasPermission } from "@/lib/permissions";
+import { verifyPaywallOrReject } from "@/lib/paywall";
 
 function safeJson(val: any, fallback: any = {}) {
   if (typeof val !== "string") return val ?? fallback;
@@ -90,6 +91,9 @@ export async function POST(req: NextRequest) {
   if (!canManage) {
     return NextResponse.json({ error: "Forbidden: insufficient permissions" }, { status: 403 });
   }
+
+  const paywallBlock = await verifyPaywallOrReject(organizationId, user);
+  if (paywallBlock) return paywallBlock;
 
   try {
     const body = await req.json();
@@ -212,13 +216,19 @@ export async function DELETE(req: NextRequest) {
     }
 
     // If not in roster, check if it's a registered user under this organization
-    if (targetId) {
+    if (targetId || targetName) {
       const dbUser = await prisma.user.findFirst({
-        where: { id: targetId, organizationId },
+        where: {
+          organizationId,
+          ...(targetId
+            ? { id: targetId }
+            : { name: { equals: targetName, mode: "insensitive" } }),
+        },
       });
-      if (dbUser && dbUser.role !== "ORG_ADMIN") {
+
+      if (dbUser && dbUser.id !== session.user.id && dbUser.role !== "ORG_ADMIN") {
         await prisma.user.update({
-          where: { id: targetId },
+          where: { id: dbUser.id },
           data: { isActive: false },
         });
         return NextResponse.json({ success: true, removedFrom: "users" });

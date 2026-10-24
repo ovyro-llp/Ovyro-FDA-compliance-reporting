@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { NextRequest, NextResponse } from "next/server";
-import { resolveOrganizationId, resolveUserId } from "@/lib/permissions";
+import { resolveOrganizationId, resolveUserId, userHasPermission } from "@/lib/permissions";
 import { verifyPaywallOrReject } from "@/lib/paywall";
 
 function safeJson(val: any, fallback: any = {}) {
@@ -86,7 +86,9 @@ export async function POST(req: NextRequest) {
     id: string;
     organizationId: string;
     role: string;
+    name?: string;
     email?: string;
+    permissions?: string[];
   };
 
   const organizationId = await resolveOrganizationId(user);
@@ -129,8 +131,28 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Template not found or access denied" }, { status: 404 });
     }
 
+    const outlet = await prisma.outlet.findFirst({
+      where: { id: outletId, organizationId, isActive: true },
+    });
+
+    if (!outlet) {
+      return NextResponse.json({ error: "Facility not found or access denied" }, { status: 404 });
+    }
+
     const dataString = typeof data === "string" ? data : JSON.stringify(data || {});
     const verifiedScore = computeComplianceScore(dataString, complianceScore);
+
+    const canSupervisorSign =
+      user.role === "ORG_ADMIN" ||
+      user.role === "SUPER_ADMIN" ||
+      user.role === "ADMIN" ||
+      user.role === "SUPERVISOR" ||
+      userHasPermission(user.permissions, "supervisor_signoff", user.role);
+
+    // Enforce authorization for supervisor sign-off to prevent audit trail forgery
+    const verifiedSupervisorSigned = canSupervisorSign ? !!supervisorSigned : false;
+    const verifiedSupervisorName = verifiedSupervisorSigned ? (supervisorName || user.name || "Supervisor") : "";
+    const verifiedStatus = (status === "VERIFIED" && !canSupervisorSign) ? "SUBMITTED" : (status || (verifiedSupervisorSigned ? "VERIFIED" : "SUBMITTED"));
 
     if (id) {
       const existing = await prisma.formSubmission.findFirst({
@@ -160,11 +182,11 @@ export async function POST(req: NextRequest) {
           shift: shift !== undefined ? shift : existing.shift,
           comments: comments !== undefined ? comments : existing.comments,
           correctiveAction: correctiveAction !== undefined ? correctiveAction : existing.correctiveAction,
-          supervisorName: supervisorName !== undefined ? supervisorName : existing.supervisorName,
-          supervisorSigned: supervisorSigned !== undefined ? supervisorSigned : existing.supervisorSigned,
-          signatureData: signatureData !== undefined ? signatureData : existing.signatureData,
+          supervisorName: canSupervisorSign ? (supervisorName !== undefined ? supervisorName : existing.supervisorName) : existing.supervisorName,
+          supervisorSigned: canSupervisorSign ? (supervisorSigned !== undefined ? supervisorSigned : existing.supervisorSigned) : existing.supervisorSigned,
+          signatureData: canSupervisorSign ? (signatureData !== undefined ? signatureData : existing.signatureData) : existing.signatureData,
           complianceScore: data !== undefined ? verifiedScore : (complianceScore !== undefined ? verifiedScore : existing.complianceScore),
-          status: status || existing.status,
+          status: (status === "VERIFIED" && !canSupervisorSign) ? existing.status : (status || existing.status),
         },
       });
 
@@ -192,11 +214,11 @@ export async function POST(req: NextRequest) {
           data: dataString,
           comments: comments || existingSameShift.comments,
           correctiveAction: correctiveAction || existingSameShift.correctiveAction,
-          supervisorName: supervisorName || existingSameShift.supervisorName,
-          supervisorSigned: supervisorSigned !== undefined ? supervisorSigned : existingSameShift.supervisorSigned,
-          signatureData: signatureData || existingSameShift.signatureData,
+          supervisorName: canSupervisorSign ? (supervisorName || existingSameShift.supervisorName) : existingSameShift.supervisorName,
+          supervisorSigned: canSupervisorSign ? (supervisorSigned !== undefined ? supervisorSigned : existingSameShift.supervisorSigned) : existingSameShift.supervisorSigned,
+          signatureData: canSupervisorSign ? (signatureData || existingSameShift.signatureData) : existingSameShift.signatureData,
           complianceScore: verifiedScore,
-          status: status || "SUBMITTED",
+          status: (status === "VERIFIED" && !canSupervisorSign) ? existingSameShift.status : (status || existingSameShift.status),
         },
       });
       return NextResponse.json({
@@ -215,14 +237,14 @@ export async function POST(req: NextRequest) {
         date,
         shift: shift || null,
         submittedById: validUserId,
-        supervisorName: supervisorName || "",
-        supervisorSigned: !!supervisorSigned,
-        signatureData: signatureData || null,
+        supervisorName: verifiedSupervisorName,
+        supervisorSigned: verifiedSupervisorSigned,
+        signatureData: canSupervisorSign ? (signatureData || null) : null,
         complianceScore: verifiedScore,
         data: dataString,
         comments: comments || "",
         correctiveAction: correctiveAction || "",
-        status: status || "SUBMITTED",
+        status: verifiedStatus,
       },
     });
 
@@ -257,7 +279,8 @@ export async function GET(req: NextRequest) {
   const templateSlug = searchParams.get("templateSlug");
   const date = searchParams.get("date");
   const month = searchParams.get("month");
-  const limit = parseInt(searchParams.get("limit") || "60", 10);
+  const rawLimit = parseInt(searchParams.get("limit") || "60", 10);
+  const limit = Math.max(1, Math.min(100, isNaN(rawLimit) ? 60 : rawLimit));
 
   try {
     const where: any = { organizationId };

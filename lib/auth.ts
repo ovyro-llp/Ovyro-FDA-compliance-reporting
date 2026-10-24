@@ -4,9 +4,15 @@ import { prisma } from "@/lib/db";
 import bcrypt from "bcryptjs";
 
 if (!process.env.AUTH_SECRET) {
-  process.env.AUTH_SECRET =
-    process.env.NEXTAUTH_SECRET ||
-    "saas_reporting_secure_jwt_secret_2026_super_session_key_7781";
+  const configuredSecret = process.env.NEXTAUTH_SECRET;
+  if (!configuredSecret) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("FATAL: AUTH_SECRET or NEXTAUTH_SECRET environment variable is required in production.");
+    }
+    process.env.AUTH_SECRET = "dev_only_jwt_secret_reporting_app_local";
+  } else {
+    process.env.AUTH_SECRET = configuredSecret;
+  }
 }
 
 if (process.env.NEXTAUTH_URL && !process.env.NEXTAUTH_URL.startsWith("http://") && !process.env.NEXTAUTH_URL.startsWith("https://")) {
@@ -43,7 +49,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             where: { email },
             include: {
               organization: {
-                select: { id: true, name: true, slug: true, plan: true },
+                select: { id: true, name: true, slug: true, plan: true, status: true },
               },
               customRole: {
                 select: { id: true, name: true, permissions: true },
@@ -61,7 +67,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           throw new Error("DATABASE_UNREACHABLE");
         }
 
-        if (!user || !user.isActive) return null;
+        if (
+          !user ||
+          !user.isActive ||
+          !user.organization ||
+          user.organization.status === "SUSPENDED" ||
+          user.organization.status === "CANCELLED"
+        ) {
+          return null;
+        }
 
         const valid = await bcrypt.compare(password, user.passwordHash);
         if (!valid) return null;

@@ -269,7 +269,6 @@ export async function resolveUserId(sessionUser: {
 export function isPlatformOwner(user?: { role?: string | null; email?: string | null } | null): boolean {
   if (!user) return false;
   if (user.role === "SUPER_ADMIN" || user.role === "PLATFORM_OWNER") return true;
-  if (user.email === "admin@reporting.app") return true;
   if (process.env.PLATFORM_OWNER_EMAIL && user.email === process.env.PLATFORM_OWNER_EMAIL) return true;
   return false;
 }

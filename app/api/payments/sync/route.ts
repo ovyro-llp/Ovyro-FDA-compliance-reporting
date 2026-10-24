@@ -42,44 +42,73 @@ export async function POST(req: NextRequest) {
 
     // Case 1: Reconcile specific checkout session returned from Dodo Payments
     if (sessionId) {
+      const targetOrgId = organizationId || user.organizationId;
+      if (!targetOrgId) {
+        return NextResponse.json({ error: "Target organization ID required" }, { status: 400 });
+      }
+
+      if (!isPlatformOwner(user) && user.organizationId !== targetOrgId) {
+        return NextResponse.json({ error: "Forbidden: Cannot sync billing for another organization" }, { status: 403 });
+      }
+
       const checkoutSession = await client.checkoutSessions.retrieve(sessionId);
-      if (checkoutSession) {
-        // If there's an organizationId in metadata or parameter
-        const targetOrgId = organizationId || user.organizationId;
-        if (targetOrgId) {
-          const org = await prisma.organization.findUnique({ where: { id: targetOrgId } });
-          if (org) {
-            // Find or update ClientBilling
-            await prisma.clientBilling.updateMany({
-              where: { dodoSessionId: sessionId },
-              data: {
-                status: "PAID",
-                paidAt: new Date(),
-                paymentMethod: "DODO_PAYMENTS",
-                notes: `Dodo checkout verified for session ${sessionId}`,
-              },
-            });
+      if (!checkoutSession) {
+        return NextResponse.json({ error: "Checkout session not found" }, { status: 404 });
+      }
 
-            const nextMonth = new Date();
-            nextMonth.setMonth(nextMonth.getMonth() + 1);
+      const sessionStatus = (checkoutSession as any).payment_status || (checkoutSession as any).status;
+      const isSuccessful =
+        sessionStatus === "succeeded" ||
+        sessionStatus === "paid" ||
+        sessionStatus === "complete" ||
+        sessionStatus === "completed";
 
-            await prisma.organization.update({
-              where: { id: targetOrgId },
-              data: {
-                billingStatus: "PAID",
-                status: "ACTIVE",
-                lastPaymentDate: new Date(),
-                nextBillingDate: nextMonth,
-              },
-            });
+      if (!isSuccessful) {
+        return NextResponse.json(
+          { error: `Payment has not succeeded yet (status: ${sessionStatus || "pending"})` },
+          { status: 400 }
+        );
+      }
 
-            return NextResponse.json({
-              success: true,
-              message: "Checkout session verified and organization activated",
-              session: checkoutSession,
-            });
-          }
-        }
+      const sessionOrgId = (checkoutSession as any).metadata?.organizationId;
+      if (sessionOrgId && sessionOrgId !== targetOrgId) {
+        return NextResponse.json(
+          { error: "Forbidden: Checkout session belongs to a different organization" },
+          { status: 403 }
+        );
+      }
+
+      const org = await prisma.organization.findUnique({ where: { id: targetOrgId } });
+      if (org) {
+        // Find or update ClientBilling
+        await prisma.clientBilling.updateMany({
+          where: { dodoSessionId: sessionId },
+          data: {
+            status: "PAID",
+            paidAt: new Date(),
+            paymentMethod: "DODO_PAYMENTS",
+            notes: `Dodo checkout verified for session ${sessionId}`,
+          },
+        });
+
+        const nextMonth = new Date();
+        nextMonth.setMonth(nextMonth.getMonth() + 1);
+
+        await prisma.organization.update({
+          where: { id: targetOrgId },
+          data: {
+            billingStatus: "PAID",
+            status: "ACTIVE",
+            lastPaymentDate: new Date(),
+            nextBillingDate: nextMonth,
+          },
+        });
+
+        return NextResponse.json({
+          success: true,
+          message: "Checkout session verified and organization activated",
+          session: checkoutSession,
+        });
       }
     }
 

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -112,11 +113,17 @@ export default function LoginPage() {
 
       <div className="login-card fade-in">
         <div className="login-logo">
-          <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mx-auto mb-3">
-            <span className="text-2xl font-black">✓</span>
+          <div className="login-logo-img-wrap">
+            <Image
+              src="/logo.png"
+              alt="OVYRO Logo"
+              width={76}
+              height={76}
+              priority
+            />
           </div>
-          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">OVYRO</h1>
-          <p className="text-xs text-slate-500 font-medium mt-1">Daily Operations & Compliance</p>
+          <h1>OVYRO</h1>
+          <p>Daily Operations & Compliance</p>
         </div>
 
         {/* Tab Selector: Sign In vs Create Account */}

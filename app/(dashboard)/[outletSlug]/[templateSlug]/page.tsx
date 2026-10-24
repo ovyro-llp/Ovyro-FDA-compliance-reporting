@@ -43,7 +43,7 @@ export default async function DynamicSheetPage({ params }: PageProps) {
   }
 
   // Find outlet by id or code
-  let outlet = await prisma.outlet.findFirst({
+  const outlet = await prisma.outlet.findFirst({
     where: {
       organizationId,
       OR: [
@@ -56,11 +56,7 @@ export default async function DynamicSheetPage({ params }: PageProps) {
   });
 
   if (!outlet) {
-    // If not found by direct ID, fallback to first active outlet
-    outlet = await prisma.outlet.findFirst({
-      where: { organizationId, isActive: true },
-    });
-    if (!outlet) notFound();
+    notFound();
   }
 
   const activeOutlet = outlet;
@@ -80,6 +76,19 @@ export default async function DynamicSheetPage({ params }: PageProps) {
   });
 
   if (!template) {
+    notFound();
+  }
+
+  // Verify that the template is assigned and enabled for this specific facility
+  const outletTemplate = await prisma.outletTemplate.findFirst({
+    where: {
+      outletId: activeOutlet.id,
+      templateId: template.id,
+      isEnabled: true,
+    },
+  });
+
+  if (!outletTemplate) {
     notFound();
   }
 

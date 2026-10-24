@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 
 interface BillingRecord {
   id: string;
@@ -435,12 +436,23 @@ export default function PlatformClient({
         gap: "1rem",
         boxShadow: "0 4px 12px rgba(6, 78, 59, 0.15)"
       }}>
-        <div>
-          <div style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.08em", opacity: 0.8, fontWeight: 700 }}>
-            Active Subscription Catalog (Dodo Payments)
+        <div style={{ display: "flex", alignItems: "center", gap: "0.85rem" }}>
+          <div style={{ background: "white", padding: "4px", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 6px rgba(0,0,0,0.15)" }}>
+            <Image
+              src="/logo.png"
+              alt="OVYRO Logo"
+              width={36}
+              height={36}
+              className="w-9 h-9 object-contain"
+            />
           </div>
-          <div style={{ fontSize: "1.1rem", fontWeight: 700, marginTop: "0.2rem" }}>
-            OVYRO FDA & Food Compliance Reporting
+          <div>
+            <div style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.08em", opacity: 0.85, fontWeight: 700 }}>
+              Active Subscription Catalog (Dodo Payments)
+            </div>
+            <div style={{ fontSize: "1.1rem", fontWeight: 700, marginTop: "0.15rem" }}>
+              OVYRO FDA & Food Compliance Reporting
+            </div>
           </div>
         </div>
         <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>

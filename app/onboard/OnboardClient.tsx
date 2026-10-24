@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 interface OnboardClientProps {
   user: {
@@ -277,8 +278,15 @@ export default function OnboardClient({ user, organization, products }: OnboardC
       {/* Sticky Header with Animated Progress Bar */}
       <header className="onboard-wizard-header">
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <div style={{ width: "32px", height: "32px", borderRadius: "8px", background: "#111111", color: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "700", fontSize: "14px" }}>
-            OV
+          <div style={{ width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Image
+              src="/logo.png"
+              alt="OVYRO Logo"
+              width={32}
+              height={32}
+              className="w-8 h-8 object-contain"
+              priority
+            />
           </div>
           <div>
             <div style={{ fontSize: "14px", fontWeight: "600", color: "#111111" }}>{organization.name}</div>

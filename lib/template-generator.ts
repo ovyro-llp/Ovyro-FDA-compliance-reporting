@@ -31,14 +31,19 @@ export async function generateTailoredTemplatesForOrg(
   });
 
   for (const ot of existingOutletTemplates) {
-    // Check if template has any submissions; if not, safely unlink
+    // Check if template has any submissions; if not, safely unlink from this outlet
     const submissionCount = await prisma.formSubmission.count({
       where: { templateId: ot.templateId },
     });
     if (submissionCount === 0) {
-      await prisma.outletTemplate.deleteMany({ where: { templateId: ot.templateId } });
-      await prisma.userTemplateAccess.deleteMany({ where: { templateId: ot.templateId } });
-      await prisma.formTemplate.delete({ where: { id: ot.templateId } }).catch(() => {});
+      await prisma.outletTemplate.deleteMany({ where: { templateId: ot.templateId, outletId } });
+      const otherOutletsUsing = await prisma.outletTemplate.count({
+        where: { templateId: ot.templateId },
+      });
+      if (otherOutletsUsing === 0) {
+        await prisma.userTemplateAccess.deleteMany({ where: { templateId: ot.templateId } });
+        await prisma.formTemplate.delete({ where: { id: ot.templateId } }).catch(() => {});
+      }
     }
   }
 

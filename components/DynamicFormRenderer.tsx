@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import PaywallModal from "@/components/PaywallModal";
 
 export interface DynamicFormRendererProps {
@@ -811,8 +812,16 @@ function getInitialDataForSchema(
           <button
             type="button"
             onClick={() => router.push("/dashboard")}
+            style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}
           >
-            Workspace
+            <Image
+              src="/logo.png"
+              alt="OVYRO"
+              width={16}
+              height={16}
+              className="w-4 h-4 object-contain inline-block"
+            />
+            <span>Workspace</span>
           </button>
           <span className="notion-doc-breadcrumb-sep">/</span>
           <span>{outlet.name}</span>

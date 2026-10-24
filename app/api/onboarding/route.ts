@@ -9,9 +9,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const user = session.user as { organizationId?: string; id?: string };
+  const user = session.user as { organizationId?: string; id?: string; role?: string; permissions?: string[] };
   if (!user.organizationId) {
     return NextResponse.json({ error: "User is not assigned to an organization" }, { status: 400 });
+  }
+
+  const canOnboard =
+    user.role === "ORG_ADMIN" ||
+    user.role === "SUPER_ADMIN" ||
+    user.role === "ADMIN";
+
+  if (!canOnboard) {
+    return NextResponse.json({ error: "Forbidden: Organization administrator access required" }, { status: 403 });
   }
 
   try {

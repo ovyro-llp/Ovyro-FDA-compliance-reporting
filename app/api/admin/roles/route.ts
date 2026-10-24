@@ -60,8 +60,24 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { name, description, permissions } = body;
 
-    if (!name) {
+    const cleanName = name.trim();
+    if (!cleanName) {
       return NextResponse.json({ error: "Role name is required" }, { status: 400 });
+    }
+
+    // Check duplicate role name in organization
+    const duplicate = await prisma.customRole.findFirst({
+      where: {
+        organizationId,
+        name: { equals: cleanName, mode: "insensitive" },
+      },
+    });
+
+    if (duplicate) {
+      return NextResponse.json(
+        { error: "A role with this name already exists in your organization" },
+        { status: 409 }
+      );
     }
 
     const permsString =
@@ -72,7 +88,7 @@ export async function POST(req: NextRequest) {
     const role = await prisma.customRole.create({
       data: {
         organizationId,
-        name,
+        name: cleanName,
         description: description || "",
         permissions: permsString,
       },
@@ -109,7 +125,8 @@ export async function PUT(req: NextRequest) {
     const body = await req.json();
     const { id, name, description, permissions } = body;
 
-    if (!id || !name) {
+    const cleanName = name.trim();
+    if (!id || !cleanName) {
       return NextResponse.json({ error: "Role ID and name are required" }, { status: 400 });
     }
 
@@ -121,6 +138,22 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: "Role not found" }, { status: 404 });
     }
 
+    // Check duplicate role name on rename
+    const duplicate = await prisma.customRole.findFirst({
+      where: {
+        organizationId,
+        id: { not: id },
+        name: { equals: cleanName, mode: "insensitive" },
+      },
+    });
+
+    if (duplicate) {
+      return NextResponse.json(
+        { error: "A role with this name already exists in your organization" },
+        { status: 409 }
+      );
+    }
+
     const permsString =
       typeof permissions === "string"
         ? permissions
@@ -129,7 +162,7 @@ export async function PUT(req: NextRequest) {
     const updated = await prisma.customRole.update({
       where: { id },
       data: {
-        name,
+        name: cleanName,
         description: description !== undefined ? description : existing.description,
         permissions: permsString,
       },
@@ -174,6 +207,10 @@ export async function DELETE(req: NextRequest) {
 
     if (!existing) {
       return NextResponse.json({ error: "Role not found" }, { status: 404 });
+    }
+
+    if (existing.isSystem) {
+      return NextResponse.json({ error: "System default roles cannot be deleted" }, { status: 400 });
     }
 
     // Unlink users who have this role
