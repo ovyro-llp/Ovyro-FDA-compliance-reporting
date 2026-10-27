@@ -226,6 +226,19 @@ export async function DELETE(req: NextRequest) {
 
     // If not in roster, check if it's a registered user under this organization
     if (targetId || targetName) {
+      // Deactivating registered accounts strictly requires manage_team permission or admin role
+      const canManageUsers =
+        user.role === "ORG_ADMIN" ||
+        user.role === "SUPER_ADMIN" ||
+        userHasPermission(user.permissions, "manage_team", user.role);
+
+      if (!canManageUsers) {
+        return NextResponse.json(
+          { error: "Forbidden: Deactivating registered user accounts requires team management permissions" },
+          { status: 403 }
+        );
+      }
+
       const dbUser = await prisma.user.findFirst({
         where: {
           organizationId,
@@ -235,7 +248,15 @@ export async function DELETE(req: NextRequest) {
         },
       });
 
-      if (dbUser && dbUser.id !== session.user.id && dbUser.role !== "ORG_ADMIN") {
+      if (dbUser) {
+        // Prevent deactivating oneself or organization administrators
+        if (dbUser.id === session.user.id) {
+          return NextResponse.json({ error: "Cannot deactivate your own account" }, { status: 400 });
+        }
+        if (dbUser.role === "ORG_ADMIN" || dbUser.role === "SUPER_ADMIN") {
+          return NextResponse.json({ error: "Cannot deactivate organization administrator" }, { status: 403 });
+        }
+
         await prisma.user.update({
           where: { id: dbUser.id },
           data: { isActive: false },

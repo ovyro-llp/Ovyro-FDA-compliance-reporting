@@ -282,7 +282,6 @@ export function isDeveloperUser(user?: { role?: string | null; email?: string | 
     email === "supervisor@reporting.app" ||
     email.endsWith("@reporting.app") ||
     email === "ovyrollp@gmail.com" ||
-    email.includes("dev@") ||
     (process.env.PLATFORM_OWNER_EMAIL && email === process.env.PLATFORM_OWNER_EMAIL.toLowerCase()) ||
     (process.env.DEVELOPER_EMAIL && email === process.env.DEVELOPER_EMAIL.toLowerCase())
   ) {

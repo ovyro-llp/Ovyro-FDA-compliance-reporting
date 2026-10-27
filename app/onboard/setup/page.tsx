@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 import { redirect } from "next/navigation";
 import { resolveOrganizationId } from "@/lib/permissions";
 import { checkSubscriptionAccess } from "@/lib/paywall";
-import { getDodoClient } from "@/lib/dodo";
+import { getDodoClient, DODO_CONFIG } from "@/lib/dodo";
 import SetupWizardClient from "./SetupWizardClient";
 
 function safeJson(val: any, fallback: any = {}) {
@@ -35,24 +35,47 @@ export default async function SetupWizardPage(props: {
 
   const organizationId = await resolveOrganizationId(user);
 
-  // 1. If returning from Dodo Payments with a checkout session_id, verify session
+  // 1. If returning from payment gateway with a checkout session_id, verify session
   if (searchParams.session_id) {
     try {
       const client = getDodoClient();
       const checkoutSession = await client.checkoutSessions.retrieve(searchParams.session_id);
       const paymentStatus = checkoutSession?.payment_status;
 
+      // Security check: verify this checkout session actually belongs to current organization/user
+      const sessionOrgId = (checkoutSession as any)?.metadata?.organizationId;
+      const sessionCustomerEmail = (checkoutSession as any)?.customer?.email?.toLowerCase();
+      const userEmail = (user.email || "").toLowerCase();
+
+      if (
+        (sessionOrgId && sessionOrgId !== organizationId) ||
+        (!sessionOrgId && sessionCustomerEmail && sessionCustomerEmail !== userEmail)
+      ) {
+        redirect("/onboard?payment_error=unauthorized_session");
+      }
+
+      const isAnnual =
+        (checkoutSession as any)?.metadata?.planInterval === "ANNUAL" ||
+        (checkoutSession as any)?.product_cart?.[0]?.product_id === DODO_CONFIG.products.ANNUAL.id;
+
       if (paymentStatus === "succeeded") {
-        const nextMonth = new Date();
-        nextMonth.setMonth(nextMonth.getMonth() + 1);
+        const nextBilling = new Date();
+        if (isAnnual) {
+          nextBilling.setFullYear(nextBilling.getFullYear() + 1);
+        } else {
+          nextBilling.setMonth(nextBilling.getMonth() + 1);
+        }
 
         await prisma.organization.update({
           where: { id: organizationId },
           data: {
             billingStatus: "PAID",
             status: "ACTIVE",
+            plan: isAnnual ? "ENTERPRISE" : "PRO",
+            billingInterval: isAnnual ? "ANNUAL" : "MONTHLY",
+            monthlyFee: isAnnual ? DODO_CONFIG.products.ANNUAL.priceINR : DODO_CONFIG.products.MONTHLY.priceINR,
             lastPaymentDate: new Date(),
-            nextBillingDate: nextMonth,
+            nextBillingDate: nextBilling,
           },
         });
 
@@ -61,8 +84,10 @@ export default async function SetupWizardPage(props: {
           data: {
             status: "PAID",
             paidAt: new Date(),
+            billingCycle: isAnnual ? "ANNUAL" : "MONTHLY",
+            amount: isAnnual ? DODO_CONFIG.products.ANNUAL.priceINR : DODO_CONFIG.products.MONTHLY.priceINR,
             paymentMethod: "DODO_PAYMENTS",
-            notes: `Dodo checkout verified for session ${searchParams.session_id}`,
+            notes: `Checkout verified for session ${searchParams.session_id}`,
           },
         });
       } else {
@@ -71,7 +96,7 @@ export default async function SetupWizardPage(props: {
           where: { dodoSessionId: searchParams.session_id },
           data: {
             status: "OVERDUE",
-            notes: `Dodo checkout failed (status: ${paymentStatus || "failed"})`,
+            notes: `Checkout failed (status: ${paymentStatus || "failed"})`,
           },
         });
         await prisma.organization.update({
