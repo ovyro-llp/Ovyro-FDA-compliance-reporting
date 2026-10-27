@@ -90,6 +90,25 @@ interface UsersClientProps {
   customRoles: Array<{ id: string; name: string; description?: string; permissions: string[] }>;
 }
 
+const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
+  OPERATOR: ["submit_checklists"],
+  SUPERVISOR: [
+    "submit_checklists",
+    "supervisor_signoff",
+    "view_reports",
+    "export_audit_pack",
+  ],
+  OUTLET_MANAGER: [
+    "submit_checklists",
+    "supervisor_signoff",
+    "view_reports",
+    "export_audit_pack",
+    "manage_outlets",
+    "manage_team",
+  ],
+  ORG_ADMIN: SYSTEM_PERMISSIONS.map((p) => p.key),
+};
+
 export default function UsersClient({
   initialUsers,
   outlets,
@@ -170,7 +189,7 @@ export default function UsersClient({
     setUserPassword("");
     setBaseRole("OPERATOR");
     setSelectedCustomRole("");
-    setSelectedPermissions(["submit_checklists"]);
+    setSelectedPermissions(DEFAULT_ROLE_PERMISSIONS.OPERATOR);
     setSelectedOutlets(outlets.map((o) => o.id));
     setSelectedTemplates(templates.map((t) => t.id));
     setShowUserModal(true);
@@ -182,9 +201,12 @@ export default function UsersClient({
     setUserName(u.name);
     setUserEmail(u.email);
     setUserPassword("");
-    setBaseRole(u.role);
+    setBaseRole(u.role || "OPERATOR");
     setSelectedCustomRole(u.customRoleId || "");
-    setSelectedPermissions(u.permissions || ["submit_checklists"]);
+    const initialPerms = Array.isArray(u.permissions) && u.permissions.length > 0
+      ? u.permissions
+      : (u.customRole?.permissions || DEFAULT_ROLE_PERMISSIONS[u.role] || ["submit_checklists"]);
+    setSelectedPermissions(initialPerms);
     setSelectedOutlets((u.userOutlets || []).map((uo) => uo.outletId));
     
     // If templateAccess is empty, default to all, else map granted template IDs
@@ -193,6 +215,32 @@ export default function UsersClient({
     
     setShowUserModal(true);
     setAlert(null);
+  };
+
+  const handleRoleSelectChange = (val: string) => {
+    if (val.startsWith("CUSTOM:")) {
+      const roleId = val.replace("CUSTOM:", "");
+      setSelectedCustomRole(roleId);
+      const target = customRoles.find((r) => r.id === roleId);
+      if (target) {
+        setSelectedPermissions(target.permissions || []);
+        // Match underlying base tier for server authorization
+        if (target.permissions.includes("manage_organization")) {
+          setBaseRole("ORG_ADMIN");
+        } else if (target.permissions.includes("manage_outlets") || target.permissions.includes("manage_team")) {
+          setBaseRole("OUTLET_MANAGER");
+        } else if (target.permissions.includes("supervisor_signoff")) {
+          setBaseRole("SUPERVISOR");
+        } else {
+          setBaseRole("OPERATOR");
+        }
+      }
+    } else if (val.startsWith("BASE:")) {
+      const roleKey = val.replace("BASE:", "");
+      setBaseRole(roleKey);
+      setSelectedCustomRole("");
+      setSelectedPermissions(DEFAULT_ROLE_PERMISSIONS[roleKey] || ["submit_checklists"]);
+    }
   };
 
   const handleSaveUser = async (e: React.FormEvent) => {
@@ -396,7 +444,7 @@ export default function UsersClient({
           className={`tab-btn ${activeTab === "roles" ? "active" : ""}`}
         >
           <IconShield />
-          <span>Dynamic Custom Roles ({(Array.isArray(customRoles) ? customRoles : []).length})</span>
+          <span>Roles & Permissions ({(Array.isArray(customRoles) ? customRoles : []).length})</span>
         </button>
       </div>
 
@@ -410,7 +458,7 @@ export default function UsersClient({
               <thead>
                 <tr>
                   <th>Employee / Member</th>
-                  <th>Assigned Role</th>
+                  <th>Role</th>
                   <th>Assigned Facilities</th>
                   <th>Checklist Access</th>
                   <th>Status</th>
@@ -515,7 +563,7 @@ export default function UsersClient({
                 <span className="badge-category">{role.permissions.length} Permissions</span>
               </div>
               <h3 className="template-title">{role.name}</h3>
-              <p className="template-desc">{role.description || "Custom organization role"}</p>
+              <p className="template-desc">{role.description || "Organization role"}</p>
 
               <div className="permissions-chips-box">
                 <span className="section-label">Granted Access:</span>
@@ -606,43 +654,32 @@ export default function UsersClient({
                 </div>
               </div>
 
-              <div className="form-row-2">
-                <div className="form-group">
-                  <label>System Role Tier</label>
-                  <select
-                    value={baseRole}
-                    onChange={(e) => setBaseRole(e.target.value)}
-                    className="form-select"
-                  >
-                    <option value="OPERATOR">👷 Worker / Operator (Fill checklists)</option>
-                    <option value="SUPERVISOR">🔍 Supervisor (Verify & digital sign-off)</option>
-                    <option value="OUTLET_MANAGER">🏢 Facility / Branch Manager</option>
-                    <option value="ORG_ADMIN">👑 Organization Administrator</option>
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label>Custom Job Role Title</label>
-                  <select
-                    value={selectedCustomRole}
-                    onChange={(e) => {
-                      const rId = e.target.value;
-                      setSelectedCustomRole(rId);
-                      const targetRole = customRoles.find((r) => r.id === rId);
-                      if (targetRole) {
-                        setSelectedPermissions(targetRole.permissions);
-                      }
-                    }}
-                    className="form-select"
-                  >
-                    <option value="">Default (From Base Role)</option>
-                    {customRoles.map((r) => (
-                      <option key={r.id} value={r.id}>
-                        {r.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+              <div className="form-group">
+                <label>Job Role *</label>
+                <select
+                  value={selectedCustomRole ? `CUSTOM:${selectedCustomRole}` : `BASE:${baseRole}`}
+                  onChange={(e) => handleRoleSelectChange(e.target.value)}
+                  className="form-select"
+                >
+                  <optgroup label="Standard Roles">
+                    <option value="BASE:OPERATOR">👷 Worker / Floor Operator (Fill checklists)</option>
+                    <option value="BASE:SUPERVISOR">🔍 Shift Supervisor (Verify & digital sign-off)</option>
+                    <option value="BASE:OUTLET_MANAGER">🏢 Facility / Branch Manager</option>
+                    <option value="BASE:ORG_ADMIN">👑 Organization Administrator (Full access)</option>
+                  </optgroup>
+                  {customRoles.length > 0 && (
+                    <optgroup label="Organization Roles">
+                      {customRoles.map((r) => (
+                        <option key={r.id} value={`CUSTOM:${r.id}`}>
+                          🛡️ {r.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+                </select>
+                <span className="field-hint">
+                  Selecting a role automatically applies its designated permissions below. You can also customize individual permissions dynamically.
+                </span>
               </div>
 
               {/* Granular Permission Toggles */}
