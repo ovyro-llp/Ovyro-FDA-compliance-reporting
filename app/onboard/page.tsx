@@ -8,7 +8,10 @@ export const metadata = {
   title: "Tailor Your Workspace | Food Safety Reporting",
 };
 
-export default async function OnboardingPage() {
+export default async function OnboardingPage(props: {
+  searchParams: Promise<{ payment_error?: string; paywall?: string; reason?: string; session_id?: string }>;
+}) {
+  const searchParams = await props.searchParams;
   const session = await auth();
   if (!session?.user) {
     redirect("/login?tab=register");
@@ -60,6 +63,8 @@ export default async function OnboardingPage() {
         } : null,
       }}
       products={DODO_CONFIG.products}
+      initialPaymentError={Boolean(searchParams.payment_error)}
+      initialPaywall={Boolean(searchParams.paywall)}
     />
   );
 }

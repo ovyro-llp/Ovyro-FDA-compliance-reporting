@@ -175,6 +175,9 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: "Forbidden: insufficient permissions" }, { status: 403 });
   }
 
+  const paywallBlock = await verifyPaywallOrReject(organizationId, user);
+  if (paywallBlock) return paywallBlock;
+
   try {
     const { searchParams } = new URL(req.url);
     const idParam = searchParams.get("id");

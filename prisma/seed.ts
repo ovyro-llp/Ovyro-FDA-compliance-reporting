@@ -89,8 +89,26 @@ const GENERIC_SAFETY_SCHEMA = {
 async function main() {
   const existingOrgCount = await prisma.organization.count();
   if (existingOrgCount > 0 && process.env.FORCE_SEED !== "true") {
-    console.log("ℹ️ Database is already initialized. Skipping seed to protect production data.");
-    console.log("💡 (Tip: Set FORCE_SEED=true if you explicitly wish to reset and re-seed the database).");
+    console.log("ℹ️ Database is already initialized. Ensuring developer accounts have active subscription...");
+    // Always guarantee developer accounts and seeded enterprise org have active PAID subscription
+    const adminUser = await prisma.user.findFirst({
+      where: { email: { in: ["admin@reporting.app", "supervisor@reporting.app"] } },
+      select: { organizationId: true },
+    });
+    if (adminUser?.organizationId) {
+      await prisma.organization.update({
+        where: { id: adminUser.organizationId },
+        data: {
+          billingStatus: "PAID",
+          plan: "ENTERPRISE",
+          status: "ACTIVE",
+          dodoSubscriptionId: "sub_dev_seeded_enterprise",
+          lastPaymentDate: new Date(),
+          nextBillingDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+        },
+      });
+      console.log("✅ Developer organization verified as ACTIVE / PAID.");
+    }
     return;
   }
 
@@ -117,8 +135,15 @@ async function main() {
     data: {
       name: "My Enterprise Kitchen",
       slug: "my-enterprise",
-      plan: "PRO",
+      plan: "ENTERPRISE",
       status: "ACTIVE",
+      billingStatus: "PAID",
+      billingInterval: "ANNUAL",
+      monthlyFee: 5000,
+      dodoSubscriptionId: "sub_dev_seeded_enterprise",
+      lastPaymentDate: new Date(),
+      nextBillingDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+      contactEmail: "admin@reporting.app",
       settings: JSON.stringify({
         timezone: "Asia/Kolkata",
         currency: "INR",

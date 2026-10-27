@@ -2,6 +2,8 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { redirect } from "next/navigation";
 import { resolveOrganizationId } from "@/lib/permissions";
+import { checkSubscriptionAccess } from "@/lib/paywall";
+import { getDodoClient } from "@/lib/dodo";
 import SetupWizardClient from "./SetupWizardClient";
 
 function safeJson(val: any, fallback: any = {}) {
@@ -32,6 +34,69 @@ export default async function SetupWizardPage(props: {
   };
 
   const organizationId = await resolveOrganizationId(user);
+
+  // 1. If returning from Dodo Payments with a checkout session_id, verify session
+  if (searchParams.session_id) {
+    try {
+      const client = getDodoClient();
+      const checkoutSession = await client.checkoutSessions.retrieve(searchParams.session_id);
+      const paymentStatus = checkoutSession?.payment_status;
+
+      if (paymentStatus === "succeeded") {
+        const nextMonth = new Date();
+        nextMonth.setMonth(nextMonth.getMonth() + 1);
+
+        await prisma.organization.update({
+          where: { id: organizationId },
+          data: {
+            billingStatus: "PAID",
+            status: "ACTIVE",
+            lastPaymentDate: new Date(),
+            nextBillingDate: nextMonth,
+          },
+        });
+
+        await prisma.clientBilling.updateMany({
+          where: { dodoSessionId: searchParams.session_id },
+          data: {
+            status: "PAID",
+            paidAt: new Date(),
+            paymentMethod: "DODO_PAYMENTS",
+            notes: `Dodo checkout verified for session ${searchParams.session_id}`,
+          },
+        });
+      } else {
+        // Payment failed or incomplete (e.g. 3DS bank authentication failure)
+        await prisma.clientBilling.updateMany({
+          where: { dodoSessionId: searchParams.session_id },
+          data: {
+            status: "OVERDUE",
+            notes: `Dodo checkout failed (status: ${paymentStatus || "failed"})`,
+          },
+        });
+        await prisma.organization.update({
+          where: { id: organizationId },
+          data: {
+            billingStatus: "PENDING",
+          },
+        });
+
+        // Redirect back to /onboard payment step with explicit failure notification
+        redirect(`/onboard?payment_error=failed&session_id=${searchParams.session_id}`);
+      }
+    } catch (err: any) {
+      if (err?.message === "NEXT_REDIRECT" || err?.digest?.startsWith("NEXT_REDIRECT")) {
+        throw err;
+      }
+      console.error("[SETUP_PAGE_DODO_VERIFY_ERROR]:", err.message);
+    }
+  }
+
+  // 2. Strict paywall guard: developers bypass; non-developers MUST be active PAID
+  const paywallCheck = await checkSubscriptionAccess(organizationId, user);
+  if (!paywallCheck.isPaid) {
+    redirect("/onboard?paywall=true");
+  }
 
   // Load organization, outlets, templates, and staff roster
   const [org, outlets, rawTemplates, registeredUsers] = await Promise.all([

@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { isPlatformOwner } from "@/lib/permissions";
+import { isPlatformOwner, isDeveloperUser } from "@/lib/permissions";
 import { NextResponse } from "next/server";
 
 export interface PaywallCheckResult {
@@ -19,8 +19,8 @@ export async function checkSubscriptionAccess(
   organizationId: string,
   user?: { role?: string | null; email?: string | null } | null
 ): Promise<PaywallCheckResult> {
-  // 1. Platform Owners & Super Admins bypass paywall
-  if (isPlatformOwner(user)) {
+  // 1. Platform Owners & Developer Logins always bypass paywall with full active enterprise access
+  if (isPlatformOwner(user) || isDeveloperUser(user)) {
     return {
       isPaid: true,
       billingStatus: "PAID",

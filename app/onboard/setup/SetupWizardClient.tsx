@@ -209,9 +209,16 @@ export default function SetupWizardClient({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, role }),
       });
-      if (!res.ok) throw new Error("Failed to save staff member");
-    } catch {
-      // optimistic state retained
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 402 || data.paywall) {
+        setStaffList((prev) => prev.filter((s) => s.id !== optimisticMember.id));
+        setToast({ type: "error", msg: "Active Dodo Payments subscription required to add team members." });
+        return;
+      }
+      if (!res.ok) throw new Error(data.error || "Failed to save staff member");
+    } catch (err: any) {
+      setStaffList((prev) => prev.filter((s) => s.id !== optimisticMember.id));
+      setToast({ type: "error", msg: err.message || "Failed to save staff member" });
     }
   };
 
@@ -258,6 +265,11 @@ export default function SetupWizardClient({
                 outletIds: outletId ? [outletId] : [],
               }),
             });
+            if (res.status === 402) {
+              setToast({ type: "error", msg: "Active Dodo Payments subscription required to save custom templates." });
+              setSaving(false);
+              return;
+            }
             if (res.ok) {
               const data = await res.json();
               if (data.template) {
@@ -294,6 +306,11 @@ export default function SetupWizardClient({
             outletIds: outletId ? [outletId] : [],
           }),
         });
+        if (res.status === 402) {
+          setToast({ type: "error", msg: "Active Dodo Payments subscription required to save custom templates." });
+          setSaving(false);
+          return;
+        }
         if (res.ok) {
           const data = await res.json();
           if (data.template) {
@@ -340,9 +357,13 @@ export default function SetupWizardClient({
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          {sessionId && (
+          {organization.billingStatus === "PAID" ? (
             <span style={{ fontSize: "12px", background: "#ECFDF5", color: "#065F46", padding: "4px 8px", borderRadius: "12px", border: "1px solid #A7F3D0", display: "inline-flex", alignItems: "center", gap: "4px" }}>
               ✓ Subscribed
+            </span>
+          ) : (
+            <span style={{ fontSize: "12px", background: "#FEF3C7", color: "#92400E", padding: "4px 8px", borderRadius: "12px", border: "1px solid #FDE68A", display: "inline-flex", alignItems: "center", gap: "4px" }}>
+              ⚠️ Subscription Pending
             </span>
           )}
           <button

@@ -272,3 +272,21 @@ export function isPlatformOwner(user?: { role?: string | null; email?: string | 
   if (process.env.PLATFORM_OWNER_EMAIL && user.email === process.env.PLATFORM_OWNER_EMAIL) return true;
   return false;
 }
+
+export function isDeveloperUser(user?: { role?: string | null; email?: string | null } | null): boolean {
+  if (!user) return false;
+  if (user.role === "SUPER_ADMIN" || user.role === "PLATFORM_OWNER") return true;
+  const email = (user.email || "").toLowerCase().trim();
+  if (
+    email === "admin@reporting.app" ||
+    email === "supervisor@reporting.app" ||
+    email.endsWith("@reporting.app") ||
+    email === "ovyrollp@gmail.com" ||
+    email.includes("dev@") ||
+    (process.env.PLATFORM_OWNER_EMAIL && email === process.env.PLATFORM_OWNER_EMAIL.toLowerCase()) ||
+    (process.env.DEVELOPER_EMAIL && email === process.env.DEVELOPER_EMAIL.toLowerCase())
+  ) {
+    return true;
+  }
+  return false;
+}

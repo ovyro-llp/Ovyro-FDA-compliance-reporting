@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { NextRequest, NextResponse } from "next/server";
 import { resolveOrganizationId, resolveUserId, userHasPermission } from "@/lib/permissions";
+import { verifyPaywallOrReject } from "@/lib/paywall";
 
 function safeJson(val: any, fallback: any = []) {
   if (typeof val !== "string") return val ?? fallback;
@@ -74,6 +75,9 @@ export async function POST(req: NextRequest) {
 
   const organizationId = await resolveOrganizationId(user);
   const validUserId = await resolveUserId(user);
+
+  const paywallBlock = await verifyPaywallOrReject(organizationId, user);
+  if (paywallBlock) return paywallBlock;
 
   try {
     const body = await req.json();
@@ -271,6 +275,9 @@ export async function PUT(req: NextRequest) {
 
   const organizationId = await resolveOrganizationId(user);
 
+  const paywallBlock = await verifyPaywallOrReject(organizationId, user);
+  if (paywallBlock) return paywallBlock;
+
   try {
     const body = await req.json();
     const { id, name, code, type, address, icon, shifts, isActive, templateIds } = body;
@@ -368,6 +375,9 @@ export async function DELETE(req: NextRequest) {
   }
 
   const organizationId = await resolveOrganizationId(user);
+
+  const paywallBlock = await verifyPaywallOrReject(organizationId, user);
+  if (paywallBlock) return paywallBlock;
 
   try {
     const { searchParams } = new URL(req.url);

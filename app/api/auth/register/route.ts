@@ -42,6 +42,7 @@ export async function POST(req: NextRequest) {
         billingStatus: "PENDING",
         billingInterval: "ANNUAL",
         monthlyFee: 5000,
+        contactEmail: cleanEmail,
         dodoSubscriptionId: null,
         nextBillingDate: null,
         lastPaymentDate: null,

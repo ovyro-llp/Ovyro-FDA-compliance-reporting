@@ -24,6 +24,8 @@ interface OnboardClientProps {
     MONTHLY: { id: string; name: string; priceINR: number; interval: string; description: string };
     ANNUAL: { id: string; name: string; priceINR: number; interval: string; description: string };
   };
+  initialPaymentError?: boolean;
+  initialPaywall?: boolean;
 }
 
 const PRESETS = [
@@ -97,7 +99,13 @@ const OUTLET_SCALES = [
 
 const SHIFT_OPTIONS = ["Morning", "Afternoon", "Evening", "Night"];
 
-export default function OnboardClient({ user, organization, products }: OnboardClientProps) {
+export default function OnboardClient({
+  user,
+  organization,
+  products,
+  initialPaymentError,
+  initialPaywall,
+}: OnboardClientProps) {
   const router = useRouter();
 
   // Single Question Index: 1 to 5
@@ -106,7 +114,9 @@ export default function OnboardClient({ user, organization, products }: OnboardC
   // Q3: Operating Shifts
   // Q4: Food Safety Risk Modules
   // Q5: Plan Selection & Checkout (with Skip Option)
-  const [questionIdx, setQuestionIdx] = useState<number>(1);
+  const [questionIdx, setQuestionIdx] = useState<number>(
+    initialPaymentError || initialPaywall ? 5 : 1
+  );
 
   // Form State
   const [industry, setIndustry] = useState<"RESTAURANT" | "CLOUD_KITCHEN" | "CAFE" | "MANUFACTURING">("RESTAURANT");
@@ -127,7 +137,13 @@ export default function OnboardClient({ user, organization, products }: OnboardC
   const [selectedPlan, setSelectedPlan] = useState<"MONTHLY" | "ANNUAL">("MONTHLY");
 
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(
+    initialPaymentError
+      ? "⚠️ Payment Unsuccessful: The bank could not complete 3D Secure authentication (e.g. OTP validation timed out or card not enabled for recurring payments). Your account was NOT charged. Please retry payment or try another card."
+      : initialPaywall
+      ? "🔒 Active Subscription Required: Please complete your subscription plan below to access team management and custom report builder."
+      : ""
+  );
 
   const formatINR = (val: number) => {
     return new Intl.NumberFormat("en-IN", {

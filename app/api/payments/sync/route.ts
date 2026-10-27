@@ -64,8 +64,26 @@ export async function POST(req: NextRequest) {
         sessionStatus === "completed";
 
       if (!isSuccessful) {
+        // Mark billing as overdue/failed and ensure org is NOT active paid
+        await prisma.clientBilling.updateMany({
+          where: { dodoSessionId: sessionId },
+          data: {
+            status: "OVERDUE",
+            notes: `Dodo checkout attempt not successful (status: ${sessionStatus || "pending"})`,
+          },
+        });
+        await prisma.organization.update({
+          where: { id: targetOrgId },
+          data: {
+            billingStatus: "PENDING",
+          },
+        });
+
         return NextResponse.json(
-          { error: `Payment has not succeeded yet (status: ${sessionStatus || "pending"})` },
+          {
+            error: `Payment has not succeeded yet (status: ${sessionStatus || "pending"}). Subscription not activated.`,
+            paymentStatus: sessionStatus || "pending",
+          },
           { status: 400 }
         );
       }
