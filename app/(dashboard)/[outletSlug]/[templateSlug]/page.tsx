@@ -106,13 +106,13 @@ export default async function DynamicSheetPage({ params }: PageProps) {
   ]);
 
   const parsedSettings = safeJson(org?.settings, {});
-  const groundStaffRoster: Array<{ name: string }> = Array.isArray(parsedSettings.staffRoster)
+  const groundStaffRoster: any[] = Array.isArray(parsedSettings.staffRoster)
     ? parsedSettings.staffRoster
     : [];
 
   const rawStaffList = [
     ...users.map((u) => u.name),
-    ...groundStaffRoster.map((g) => g.name),
+    ...groundStaffRoster.map((g: any) => (typeof g === "string" ? g : g?.name)),
   ].filter(Boolean);
 
   const seen = new Set<string>();

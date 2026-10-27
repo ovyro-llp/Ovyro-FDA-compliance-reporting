@@ -86,7 +86,10 @@ export async function POST(req: NextRequest) {
     user.role === "ADMIN" ||
     user.role === "SUPERVISOR" ||
     user.role === "MANAGER" ||
-    userHasPermission(user.permissions, "manage_team", user.role);
+    userHasPermission(user.permissions, "manage_team", user.role) ||
+    userHasPermission(user.permissions, "manage_users", user.role) ||
+    userHasPermission(user.permissions, "manage_templates", user.role) ||
+    userHasPermission(user.permissions, "manage_organization", user.role);
 
   if (!canManage) {
     return NextResponse.json({ error: "Forbidden: insufficient permissions" }, { status: 403 });
@@ -169,7 +172,10 @@ export async function DELETE(req: NextRequest) {
     user.role === "ADMIN" ||
     user.role === "SUPERVISOR" ||
     user.role === "MANAGER" ||
-    userHasPermission(user.permissions, "manage_team", user.role);
+    userHasPermission(user.permissions, "manage_team", user.role) ||
+    userHasPermission(user.permissions, "manage_users", user.role) ||
+    userHasPermission(user.permissions, "manage_templates", user.role) ||
+    userHasPermission(user.permissions, "manage_organization", user.role);
 
   if (!canManage) {
     return NextResponse.json({ error: "Forbidden: insufficient permissions" }, { status: 403 });

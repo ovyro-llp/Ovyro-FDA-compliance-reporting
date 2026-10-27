@@ -101,18 +101,29 @@ export default function DynamicFormRenderer({
 
   const handleAddGroundStaff = async () => {
     const clean = newCleanerName.trim();
-    if (!clean) return;
+    if (!clean) {
+      setMessage({ type: "error", text: "Please enter a staff or cleaner name." });
+      return;
+    }
     try {
       const res = await fetch("/api/admin/staff", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: clean, role: newCleanerRole }),
+        body: JSON.stringify({ name: clean, role: newCleanerRole.trim() || "Staff Member" }),
       });
-      if (res.ok) {
-        setAllStaffList((prev) => (prev.includes(clean) ? prev : [...prev, clean]));
-        setNewCleanerName("");
-        setMessage({ type: "success", text: `Added "${clean}" to cleaning roster.` });
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 402 || data.paywall) {
+        setShowPaywall(true);
+        setMessage({ type: "error", text: "Active Dodo Payments subscription required to add ground staff." });
+        return;
       }
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to add ground staff");
+      }
+      setAllStaffList((prev) => (prev.includes(clean) ? prev : [...prev, clean]));
+      setNewCleanerName("");
+      setMessage({ type: "success", text: `Added "${clean}" to cleaning roster.` });
+      router.refresh();
     } catch (e: any) {
       setMessage({ type: "error", text: e.message || "Failed to add ground staff" });
     }
@@ -926,6 +937,12 @@ function getInitialDataForSchema(
                 type="text"
                 value={newCleanerName}
                 onChange={(e) => setNewCleanerName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleAddGroundStaff();
+                  }
+                }}
                 placeholder="New Cleaner / Staff Name (e.g. Ramesh Kumar)"
                 className="notion-input"
                 style={{ flex: 1, minWidth: "180px" }}
@@ -934,6 +951,12 @@ function getInitialDataForSchema(
                 type="text"
                 value={newCleanerRole}
                 onChange={(e) => setNewCleanerRole(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleAddGroundStaff();
+                  }
+                }}
                 placeholder="Role (e.g. Kitchen Steward)"
                 className="notion-input"
                 style={{ width: "180px" }}
@@ -942,7 +965,7 @@ function getInitialDataForSchema(
                 type="button"
                 onClick={handleAddGroundStaff}
                 className="notion-preset-pill"
-                style={{ padding: "8px 14px", fontWeight: 600, fontSize: "12px" }}
+                style={{ padding: "8px 14px", fontWeight: 600, fontSize: "12px", cursor: "pointer" }}
               >
                 + Add Ground Staff
               </button>
