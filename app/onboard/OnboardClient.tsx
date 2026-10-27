@@ -258,8 +258,8 @@ export default function OnboardClient({
     }
   };
 
-  // Final Action on Q5: Launch Dodo Payments checkout
-  const handleProceedToDodoPayment = async () => {
+  // Final Action on Q5: Launch secure checkout
+  const handleProceedToPayment = async () => {
     setSaving(true);
     setError("");
     try {
@@ -274,7 +274,7 @@ export default function OnboardClient({
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to launch Dodo Payments checkout");
+      if (!res.ok) throw new Error(data.error || "Failed to launch secure payment checkout");
 
       if (data.checkoutUrl) {
         window.location.href = data.checkoutUrl;
@@ -630,11 +630,11 @@ export default function OnboardClient({
                 </div>
               </div>
 
-              {/* Dodo Payments Trust Badge */}
+              {/* Secure Payment Trust Badge */}
               <div style={{ background: "#F6F5F0", border: "1px solid #ECEAE5", borderRadius: "8px", padding: "12px 16px", display: "flex", alignItems: "center", gap: "10px", marginBottom: "24px" }}>
                 <span style={{ fontSize: "18px" }}>🔒</span>
                 <span style={{ fontSize: "13px", color: "#555550" }}>
-                  Secured & processed exclusively via <strong>Dodo Payments</strong>. Automated GST invoices, instant activation, and immediate post-payment team setup.
+                  Secured & 256-bit encrypted payments. Automated GST invoices, instant activation, and immediate post-payment team setup.
                 </span>
               </div>
 
@@ -668,12 +668,12 @@ export default function OnboardClient({
                   </button>
                   <button
                     type="button"
-                    onClick={handleProceedToDodoPayment}
+                    onClick={handleProceedToPayment}
                     disabled={saving}
                     className="onboard-primary-btn"
                     style={{ minWidth: "220px" }}
                   >
-                    {saving ? "Launching Dodo Checkout..." : "Proceed to Payment via Dodo →"}
+                    {saving ? "Launching Checkout..." : "Proceed to Payment →"}
                   </button>
                 </div>
               </div>

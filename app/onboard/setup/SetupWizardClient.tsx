@@ -212,7 +212,7 @@ export default function SetupWizardClient({
       const data = await res.json().catch(() => ({}));
       if (res.status === 402 || data.paywall) {
         setStaffList((prev) => prev.filter((s) => s.id !== optimisticMember.id));
-        setToast({ type: "error", msg: "Active Dodo Payments subscription required to add team members." });
+        setToast({ type: "error", msg: "Active subscription required to add team members." });
         return;
       }
       if (!res.ok) throw new Error(data.error || "Failed to save staff member");
@@ -266,7 +266,7 @@ export default function SetupWizardClient({
               }),
             });
             if (res.status === 402) {
-              setToast({ type: "error", msg: "Active Dodo Payments subscription required to save custom templates." });
+              setToast({ type: "error", msg: "Active subscription required to save custom templates." });
               setSaving(false);
               return;
             }
@@ -307,7 +307,7 @@ export default function SetupWizardClient({
           }),
         });
         if (res.status === 402) {
-          setToast({ type: "error", msg: "Active Dodo Payments subscription required to save custom templates." });
+          setToast({ type: "error", msg: "Active subscription required to save custom templates." });
           setSaving(false);
           return;
         }

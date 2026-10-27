@@ -190,7 +190,7 @@ export async function POST(req: NextRequest) {
       report: syncReport,
     });
   } catch (err: any) {
-    console.error("[DODO_SYNC_API_ERROR]:", err);
-    return NextResponse.json({ error: err.message || "Failed to sync with Dodo Payments" }, { status: 500 });
+    console.error("[PAYMENTS_SYNC_API_ERROR]:", err);
+    return NextResponse.json({ error: err.message || "Failed to sync payment status" }, { status: 500 });
   }
 }

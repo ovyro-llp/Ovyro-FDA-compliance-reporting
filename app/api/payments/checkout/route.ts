@@ -92,8 +92,8 @@ export async function POST(req: NextRequest) {
       interval: checkout.interval,
     });
   } catch (err: any) {
-    console.error("[DODO_CHECKOUT_API_ERROR]:", err);
-    return NextResponse.json({ error: err.message || "Failed to create Dodo Payments checkout session" }, { status: 500 });
+    console.error("[CHECKOUT_API_ERROR]:", err);
+    return NextResponse.json({ error: err.message || "Failed to create checkout session" }, { status: 500 });
   }
 }
 

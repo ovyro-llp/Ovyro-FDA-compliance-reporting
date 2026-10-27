@@ -57,13 +57,13 @@ export async function checkSubscriptionAccess(
     dodoSubscriptionId: org.dodoSubscriptionId,
     message: isPaid
       ? undefined
-      : "Active Dodo Payments subscription required. Upgrade to submit daily shift reports or modify templates.",
+      : "Active subscription required. Upgrade to submit daily shift reports or modify templates.",
   };
 }
 
 /**
  * Middleware helper for API routes: returns a 402 Payment Required NextResponse
- * if organization does not hold an active Dodo Payments subscription.
+ * if organization does not hold an active subscription.
  */
 export async function verifyPaywallOrReject(
   organizationId: string,
@@ -73,7 +73,7 @@ export async function verifyPaywallOrReject(
   if (!check.isPaid) {
     return NextResponse.json(
       {
-        error: "Active Dodo Payments subscription required to perform this action.",
+        error: "Active subscription required to perform this action.",
         paywall: true,
         billingStatus: check.billingStatus,
         requiredAction: "UPGRADE_SUBSCRIPTION",

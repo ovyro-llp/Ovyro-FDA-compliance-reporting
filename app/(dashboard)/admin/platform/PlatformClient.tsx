@@ -228,14 +228,14 @@ export default function PlatformClient({
         body: JSON.stringify(orgId ? { organizationId: orgId } : {}),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Dodo Payments synchronization failed");
+      if (!res.ok) throw new Error(data.error || "Payment synchronization failed");
 
       await reloadData();
       setToast({
         type: "success",
         msg: orgId
-          ? "Client successfully synchronized with Dodo Payments API"
-          : "All tenant subscriptions successfully synchronized with Dodo Payments API",
+          ? "Client successfully synchronized with payment gateway"
+          : "All tenant subscriptions successfully synchronized with payment gateway",
       });
     } catch (err: any) {
       setToast({ type: "error", msg: err.message });
@@ -244,7 +244,7 @@ export default function PlatformClient({
     }
   };
 
-  // Generate live Dodo Payments Checkout session
+  // Generate live Checkout session
   const handleGenerateCheckout = async (org: OrganizationItem, interval: "MONTHLY" | "ANNUAL" = "MONTHLY") => {
     setGeneratingCheckout(org.id);
     try {
@@ -257,7 +257,7 @@ export default function PlatformClient({
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to create Dodo Payments checkout session");
+      if (!res.ok) throw new Error(data.error || "Failed to create payment checkout session");
 
       setActiveCheckoutModal({
         orgName: org.name,
@@ -326,7 +326,7 @@ export default function PlatformClient({
       setShowOnboardModal(false);
       await reloadData();
 
-      // If Dodo checkout link was generated, open the checkout dialog
+      // If checkout link was generated, open the checkout dialog
       if (data.dodoCheckout?.checkoutUrl) {
         setActiveCheckoutModal({
           orgName: newName,
@@ -338,7 +338,7 @@ export default function PlatformClient({
         });
       }
 
-      setToast({ type: "success", msg: `Client "${newName}" provisioned with Dodo Payments subscription!` });
+      setToast({ type: "success", msg: `Client "${newName}" provisioned with subscription!` });
 
       // Reset form
       setNewName("");
@@ -355,7 +355,7 @@ export default function PlatformClient({
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    setToast({ type: "success", msg: "Dodo Payments checkout link copied to clipboard!" });
+    setToast({ type: "success", msg: "Payment checkout link copied to clipboard!" });
   };
 
   const filteredOrgs = organizations.filter((org) => {
@@ -382,12 +382,12 @@ export default function PlatformClient({
           <div className="platform-tag" style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem" }}>
             <span>👑 SaaS Commercial Control Center</span>
             <span style={{ fontSize: "0.7rem", padding: "0.15rem 0.4rem", background: "#ecfdf5", color: "#059669", borderRadius: "4px", fontWeight: "bold" }}>
-              Dodo Payments Live
+              Payment Gateway Active
             </span>
           </div>
           <h1 className="page-title">SaaS Client & Revenue Operations</h1>
           <p className="page-subtitle">
-            All subscriptions and client collections are exclusively processed and synchronized in real-time through Dodo Payments (OVYRO FDA Reporting).
+            All subscriptions and client collections are processed and synchronized in real-time through the secure payment gateway.
           </p>
         </div>
         <div className="header-actions-group" style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
@@ -397,10 +397,10 @@ export default function PlatformClient({
             disabled={syncing}
             className="btn-create-primary"
             style={{ background: "#f8fafc", color: "#334155", border: "1px solid #cbd5e1", boxShadow: "none" }}
-            title="Sync all client subscriptions from Dodo Payments"
+            title="Sync all client subscriptions from payment gateway"
           >
             <IconRefresh className={syncing ? "spin-animate" : ""} />
-            <span>{syncing ? "Syncing..." : "Sync Dodo Payments"}</span>
+            <span>{syncing ? "Syncing..." : "Sync Payments"}</span>
           </button>
 
           <button
@@ -422,7 +422,7 @@ export default function PlatformClient({
         </div>
       )}
 
-      {/* Dodo Product Plans Bar */}
+      {/* Subscription Plans Bar */}
       <div style={{
         background: "linear-gradient(135deg, #064e3b, #065f46)",
         borderRadius: "var(--radius-md)",
@@ -448,7 +448,7 @@ export default function PlatformClient({
           </div>
           <div>
             <div style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.08em", opacity: 0.85, fontWeight: 700 }}>
-              Active Subscription Catalog (Dodo Payments)
+              Active Subscription Catalog
             </div>
             <div style={{ fontSize: "1.1rem", fontWeight: 700, marginTop: "0.15rem" }}>
               OVYRO FDA & Food Compliance Reporting
@@ -495,7 +495,7 @@ export default function PlatformClient({
 
         <div className="stat-card">
           <div className="stat-card-header">
-            <span className="stat-label">Payments Received (Dodo)</span>
+            <span className="stat-label">Payments Received</span>
             <div className="stat-icon-wrap success-icon">
               <IconCheckCircle />
             </div>
@@ -512,17 +512,17 @@ export default function PlatformClient({
             </div>
           </div>
           <div className="stat-number stat-amber">{formatINR(metrics.totalRevenuePending)}</div>
-          <span className="stat-subtext">Awaiting Dodo Checkout</span>
+          <span className="stat-subtext">Awaiting Checkout</span>
         </div>
       </div>
 
-      {/* Client List & Dodo Subscription Operations */}
+      {/* Client List & Subscription Operations */}
       <div className="card platform-client-card">
         <div className="card-header platform-client-toolbar">
           <div>
             <h2 className="card-title">Commercial Client Directory</h2>
             <p className="card-subtitle">
-              Manage food businesses, generate official Dodo checkout links, and review synchronized subscription states.
+              Manage food businesses, generate official checkout links, and review synchronized subscription states.
             </p>
           </div>
 
@@ -566,11 +566,11 @@ export default function PlatformClient({
             <thead>
               <tr>
                 <th>Food Business / Client</th>
-                <th>Dodo Subscription</th>
+                <th>Subscription Reference</th>
                 <th>Plan Tier</th>
                 <th>Rate & Cycle</th>
                 <th>Payment Status</th>
-                <th>Dodo Payment Actions</th>
+                <th>Payment Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -592,7 +592,7 @@ export default function PlatformClient({
 
                   const origin = typeof window !== "undefined" ? window.location.origin : (process.env.NEXTAUTH_URL || "http://localhost:3000");
                   const whatsappMessage = encodeURIComponent(
-                    `Hello ${org.name},\nHere is your official Dodo Payments subscription link for OVYRO FDA Reporting (${formatINR(org.monthlyFee)}/${isAnnual ? "year" : "month"}):\n${checkoutUrl || `${origin}/admin/platform`}\n\nPlease tap to complete payment securely via Dodo Payments. Thank you!`
+                    `Hello ${org.name},\nHere is your official subscription link for OVYRO FDA Reporting (${formatINR(org.monthlyFee)}/${isAnnual ? "year" : "month"}):\n${checkoutUrl || `${origin}/admin/platform`}\n\nPlease tap to complete payment securely online. Thank you!`
                   );
                   const whatsappUrl = cleanPhone
                     ? `https://wa.me/${cleanPhone}?text=${whatsappMessage}`
@@ -632,7 +632,7 @@ export default function PlatformClient({
                               {org.dodoSubscriptionId.slice(0, 16)}...
                             </span>
                             <span className="muted-text" style={{ fontSize: "0.7rem", display: "block", marginTop: "0.15rem" }}>
-                              Synced via Dodo
+                              Synced
                             </span>
                           </div>
                         ) : (
@@ -651,7 +651,7 @@ export default function PlatformClient({
                       </td>
                       <td>
                         <span className={`plan-badge ${isAnnual ? "enterprise" : "pro"}`}>
-                          {isAnnual ? "Annual Extended" : "Monthly Standard"}
+                           {isAnnual ? "Annual Extended" : "Monthly Standard"}
                         </span>
                       </td>
                       <td>
@@ -664,13 +664,13 @@ export default function PlatformClient({
                         <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
                           <span className={`payment-toggle-pill ${isPaid ? "paid" : "pending"}`}>
                             <span className="payment-dot" />
-                            <span>{isPaid ? "Active (Dodo)" : "Pending (Dodo)"}</span>
+                            <span>{isPaid ? "Active (Paid)" : "Pending Payment"}</span>
                           </span>
                         </div>
                       </td>
                       <td>
                         <div style={{ display: "flex", gap: "0.4rem", alignItems: "center", flexWrap: "wrap" }}>
-                          {/* 1-Click Pay or Generate Dodo Checkout Link */}
+                          {/* 1-Click Pay or Generate Checkout Link */}
                           <button
                             type="button"
                             onClick={() => handleGenerateCheckout(org, isAnnual ? "ANNUAL" : "MONTHLY")}
@@ -683,32 +683,32 @@ export default function PlatformClient({
                               gap: "0.3rem",
                               background: isPaid ? "#0284c7" : "#059669"
                             }}
-                            title="Generate and open official Dodo Payments checkout link"
+                            title="Generate and open official checkout link"
                           >
                             <IconExternalLink />
-                            <span>{generatingCheckout === org.id ? "Generating..." : isPaid ? "Renew / Change" : "Get Dodo Link"}</span>
+                            <span>{generatingCheckout === org.id ? "Generating..." : isPaid ? "Renew / Change" : "Get Checkout Link"}</span>
                           </button>
 
-                          {/* WhatsApp Reminder with Dodo Checkout Link */}
+                          {/* WhatsApp Reminder with Checkout Link */}
                           <a
                             href={whatsappUrl}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="btn-whatsapp"
                             style={{ minHeight: "34px" }}
-                            title="Send official Dodo Payments checkout link via WhatsApp"
+                            title="Send official checkout link via WhatsApp"
                           >
                             <IconWhatsApp />
                             <span>WhatsApp</span>
                           </a>
 
-                          {/* Instant Dodo Sync */}
+                          {/* Instant Sync */}
                           <button
                             type="button"
                             onClick={() => handleSyncDodo(org.id)}
                             className="btn-action-small"
                             style={{ padding: "0.35rem 0.5rem", minHeight: "34px" }}
-                            title="Sync live status with Dodo Payments API"
+                            title="Sync live status with payment gateway"
                           >
                             <IconRefresh />
                           </button>
@@ -742,7 +742,7 @@ export default function PlatformClient({
           <div className="modal-card" style={{ maxWidth: "560px" }}>
             <div className="modal-header">
               <div>
-                <h2 style={{ fontSize: "1.2rem", fontWeight: 700 }}>Dodo Payments Checkout Session</h2>
+                <h2 style={{ fontSize: "1.2rem", fontWeight: 700 }}>Secure Payment Checkout Session</h2>
                 <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>
                   Client: {activeCheckoutModal.orgName} • Plan: {activeCheckoutModal.interval} ({formatINR(activeCheckoutModal.amount)})
                 </span>
@@ -765,7 +765,7 @@ export default function PlatformClient({
                 marginBottom: "1.25rem"
               }}>
                 <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase", marginBottom: "0.35rem" }}>
-                  Live Dodo Checkout URL
+                  Live Checkout URL
                 </div>
                 <div style={{
                   fontFamily: "monospace",
@@ -806,7 +806,7 @@ export default function PlatformClient({
                 <div style={{ marginTop: "1rem" }}>
                   <a
                     href={`https://wa.me/${activeCheckoutModal.contactPhone.replace(/[^0-9]/g, "")}?text=${encodeURIComponent(
-                      `Hello ${activeCheckoutModal.orgName},\nHere is your official Dodo Payments checkout link for OVYRO FDA Reporting (${formatINR(activeCheckoutModal.amount)}/${activeCheckoutModal.interval.toLowerCase()}):\n${activeCheckoutModal.checkoutUrl}\n\nPlease tap the link to complete payment securely via Dodo Payments.`
+                      `Hello ${activeCheckoutModal.orgName},\nHere is your official payment checkout link for OVYRO FDA Reporting (${formatINR(activeCheckoutModal.amount)}/${activeCheckoutModal.interval.toLowerCase()}):\n${activeCheckoutModal.checkoutUrl}\n\nPlease tap the link to complete payment securely online.`
                     )}`}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -841,7 +841,7 @@ export default function PlatformClient({
               <div>
                 <h2>Onboard New Food Business Client</h2>
                 <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>
-                  Client will be provisioned with Dodo Payments subscription & customized industry presets
+                  Client will be provisioned with subscription & customized industry presets
                 </span>
               </div>
               <button
@@ -924,9 +924,9 @@ export default function PlatformClient({
                   </div>
                 </div>
 
-                {/* 3. Dodo Subscription Plan Selection */}
+                {/* 3. Subscription Plan Selection */}
                 <div className="form-group" style={{ marginTop: "1rem" }}>
-                  <label>Dodo Payments Subscription Plan</label>
+                  <label>Subscription Plan</label>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
                     <div
                       onClick={() => setNewBillingInterval("MONTHLY")}
@@ -1037,7 +1037,7 @@ export default function PlatformClient({
                   disabled={saving}
                   className="btn-primary-action"
                 >
-                  <span>{saving ? "Provisioning Client..." : "Provision Client & Create Dodo Subscription"}</span>
+                  <span>{saving ? "Provisioning Client..." : "Provision Client & Create Subscription"}</span>
                 </button>
               </div>
             </form>

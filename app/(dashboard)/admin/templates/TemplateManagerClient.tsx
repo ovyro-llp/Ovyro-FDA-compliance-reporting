@@ -740,7 +740,7 @@ export default function TemplateManagerClient({
       const json = await res.json();
       if (res.status === 402 || json.paywall) {
         setShowPaywall(true);
-        setError("Subscription required to create or modify templates. Upgrade via Dodo Payments.");
+        setError("Subscription required to create or modify templates. Please upgrade your subscription to continue.");
         return;
       }
       if (!res.ok) throw new Error(json.error || "Failed to save template");
@@ -1652,7 +1652,7 @@ export default function TemplateManagerClient({
         isOpen={showPaywall}
         onClose={() => setShowPaywall(false)}
         title="Template Management Paywalled"
-        description="Customizing checklists, adding new reporting sections, or archiving templates requires an active OVYRO FDA subscription via Dodo Payments."
+        description="Customizing checklists, adding new reporting sections, or archiving templates requires an active OVYRO FDA subscription."
       />
     </div>
   );

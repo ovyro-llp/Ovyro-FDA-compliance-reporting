@@ -89,7 +89,7 @@ export default function BillingClient({ organization, products, userRole }: Bill
   const isPaid = org.billingStatus === "PAID";
   const isAnnual = org.billingInterval === "ANNUAL" || org.plan === "ENTERPRISE";
 
-  const handlePayViaDodo = async (interval: "MONTHLY" | "ANNUAL") => {
+  const handlePay = async (interval: "MONTHLY" | "ANNUAL") => {
     setLoading(true);
     try {
       const res = await fetch("/api/payments/checkout", {
@@ -103,10 +103,10 @@ export default function BillingClient({ organization, products, userRole }: Bill
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to initialize Dodo checkout");
+      if (!res.ok) throw new Error(data.error || "Failed to initialize payment checkout");
 
       if (data.checkoutUrl) {
-        // Redirect directly to Dodo Payments checkout
+        // Redirect directly to payment checkout
         window.location.href = data.checkoutUrl;
       }
     } catch (err: any) {
@@ -115,7 +115,7 @@ export default function BillingClient({ organization, products, userRole }: Bill
     }
   };
 
-  const handleSyncWithDodo = async () => {
+  const handleSyncStatus = async () => {
     setSyncing(true);
     try {
       const res = await fetch("/api/payments/sync", {
@@ -133,7 +133,7 @@ export default function BillingClient({ organization, products, userRole }: Bill
         }));
       }
 
-      setToast({ type: "success", msg: "Subscription status verified with Dodo Payments!" });
+      setToast({ type: "success", msg: "Subscription status verified successfully!" });
     } catch (err: any) {
       setToast({ type: "error", msg: err.message });
     } finally {
@@ -155,11 +155,11 @@ export default function BillingClient({ organization, products, userRole }: Bill
         <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
           <button
             type="button"
-            onClick={handleSyncWithDodo}
+            onClick={handleSyncStatus}
             disabled={syncing}
             className="btn-create-primary"
             style={{ background: "#f8fafc", color: "#334155", border: "1px solid #cbd5e1", boxShadow: "none" }}
-            title="Check latest payment status with Dodo Payments"
+            title="Check latest payment status"
           >
             <IconRefresh className={syncing ? "spin-animate" : ""} />
             <span>{syncing ? "Checking..." : "Sync Status"}</span>
@@ -215,12 +215,12 @@ export default function BillingClient({ organization, products, userRole }: Bill
           </div>
 
           <div>
-            <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", textTransform: "uppercase", fontWeight: 600 }}>Dodo Subscription ID</div>
+            <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", textTransform: "uppercase", fontWeight: 600 }}>Subscription Reference</div>
             <div style={{ fontSize: "0.95rem", fontWeight: 600, marginTop: "0.25rem", fontFamily: "monospace" }}>
               {org.dodoSubscriptionId || "Pending First Payment"}
             </div>
             <div style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginTop: "0.15rem" }}>
-              Payment Gateway: Dodo Payments (INR)
+              Payment Gateway: Online Payments (INR)
             </div>
           </div>
 
@@ -230,7 +230,7 @@ export default function BillingClient({ organization, products, userRole }: Bill
               {org.nextBillingDate ? new Date(org.nextBillingDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "After Checkout"}
             </div>
             <div style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginTop: "0.15rem" }}>
-              Auto-renews via Dodo Payments
+              Auto-renews periodically
             </div>
           </div>
         </div>
@@ -239,22 +239,22 @@ export default function BillingClient({ organization, products, userRole }: Bill
         <div style={{ padding: "1.25rem", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem", background: isPaid ? "#f8fafc" : "#fffbeb" }}>
           <div>
             <div style={{ fontWeight: 600, fontSize: "0.95rem", color: isPaid ? "var(--text-primary)" : "#92400e" }}>
-              {isPaid ? "Your compliance reporting subscription is active." : "Your subscription requires payment confirmation via Dodo Payments."}
+              {isPaid ? "Your compliance reporting subscription is active." : "Your subscription requires payment confirmation."}
             </div>
             <div style={{ fontSize: "0.8rem", color: isPaid ? "var(--text-muted)" : "#b45309", marginTop: "0.2rem" }}>
-              Pay securely via UPI, Cards, Netbanking, or Corporate billing through Dodo Payments.
+              Pay securely via UPI, Cards, Netbanking, or Corporate billing.
             </div>
           </div>
 
           <div style={{ display: "flex", gap: "0.75rem" }}>
             <button
               type="button"
-              onClick={() => handlePayViaDodo(selectedInterval)}
+              onClick={() => handlePay(selectedInterval)}
               disabled={loading}
               className="btn-primary-action"
             >
               <IconExternalLink />
-              <span>{loading ? "Redirecting..." : isPaid ? "Change Plan / Extend Subscription" : "Pay via Dodo Payments"}</span>
+              <span>{loading ? "Redirecting..." : isPaid ? "Change Plan / Extend Subscription" : "Proceed to Payment"}</span>
             </button>
           </div>
         </div>
@@ -263,7 +263,7 @@ export default function BillingClient({ organization, products, userRole }: Bill
       {/* Plan Selection & Upgrades */}
       <div className="card" style={{ marginBottom: "1.5rem" }}>
         <div className="card-header">
-          <h2 className="card-title">Select Dodo Payments Subscription Plan</h2>
+          <h2 className="card-title">Select Subscription Plan</h2>
           <p className="card-subtitle">Choose the subscription frequency that best matches your food business operations.</p>
         </div>
 
@@ -308,7 +308,7 @@ export default function BillingClient({ organization, products, userRole }: Bill
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                handlePayViaDodo("MONTHLY");
+                handlePay("MONTHLY");
               }}
               disabled={loading}
               className="btn-create-primary"
@@ -360,7 +360,7 @@ export default function BillingClient({ organization, products, userRole }: Bill
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                handlePayViaDodo("ANNUAL");
+                handlePay("ANNUAL");
               }}
               disabled={loading}
               className="btn-primary-action"
@@ -375,8 +375,8 @@ export default function BillingClient({ organization, products, userRole }: Bill
       {/* Invoice & Payment History */}
       <div className="card">
         <div className="card-header">
-          <h2 className="card-title">Dodo Payments Receipts & Invoices</h2>
-          <p className="card-subtitle">Official payment transaction records and tax invoices from Dodo Payments.</p>
+          <h2 className="card-title">Payment Receipts & Invoices</h2>
+          <p className="card-subtitle">Official payment transaction records and tax invoices.</p>
         </div>
 
         <div className="table-responsive">
@@ -426,7 +426,7 @@ export default function BillingClient({ organization, products, userRole }: Bill
                     </td>
                     <td>
                       <span style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem", fontWeight: 600, color: "#065f46" }}>
-                        <span>🦤 Dodo Payments</span>
+                        <span>💳 Online Payment</span>
                       </span>
                     </td>
                     <td>

@@ -229,7 +229,7 @@ export default function UsersClient({
       const data = await res.json();
       if (res.status === 402 || data.paywall) {
         setShowPaywall(true);
-        setAlert({ type: "error", msg: "Active Dodo Payments subscription required to manage team members or roles." });
+        setAlert({ type: "error", msg: "Active subscription required to manage team members or roles." });
         return;
       }
       if (!res.ok) throw new Error(data.error || "Failed to save user");
@@ -280,7 +280,7 @@ export default function UsersClient({
       const json = await res.json();
       if (res.status === 402 || json.paywall) {
         setShowPaywall(true);
-        setAlert({ type: "error", msg: "Active Dodo Payments subscription required to customize roles." });
+        setAlert({ type: "error", msg: "Active subscription required to customize roles." });
         return;
       }
       if (!res.ok) throw new Error(json.error || "Failed to save role");
@@ -930,7 +930,7 @@ export default function UsersClient({
         isOpen={showPaywall}
         onClose={() => setShowPaywall(false)}
         title="Team Management Paywalled"
-        description="Adding kitchen team members, assigning custom roles, and managing checklist permissions requires an active OVYRO FDA subscription via Dodo Payments."
+        description="Adding kitchen team members, assigning custom roles, and managing checklist permissions requires an active OVYRO FDA subscription."
       />
     </div>
   );

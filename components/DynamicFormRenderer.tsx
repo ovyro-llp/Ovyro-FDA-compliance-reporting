@@ -114,7 +114,7 @@ export default function DynamicFormRenderer({
       const data = await res.json().catch(() => ({}));
       if (res.status === 402 || data.paywall) {
         setShowPaywall(true);
-        setMessage({ type: "error", text: "Active Dodo Payments subscription required to add ground staff." });
+        setMessage({ type: "error", text: "Active subscription required to add ground staff." });
         return;
       }
       if (!res.ok) {
@@ -785,7 +785,7 @@ function getInitialDataForSchema(
         setShowPaywall(true);
         setMessage({
           type: "error",
-          text: "Active Dodo Payments subscription required to submit reports. Upgrade to unlock.",
+          text: "Active subscription required to submit reports. Upgrade to unlock.",
         });
         return;
       }
@@ -1977,7 +1977,7 @@ function getInitialDataForSchema(
         isOpen={showPaywall}
         onClose={() => setShowPaywall(false)}
         title="Active Subscription Required"
-        description="Your organization is currently on the Free Preview tier. To record official shift reports and submit inspection audits, activate your OVYRO FDA subscription via Dodo Payments."
+        description="Your organization is currently on the Free Preview tier. To record official shift reports and submit inspection audits, please activate your OVYRO FDA subscription."
       />
     </div>
   );

@@ -15,7 +15,7 @@ export default function PaywallModal({
   isOpen,
   onClose,
   title = "Active Subscription Required",
-  description = "You can inspect all templates for free. To submit daily shift reports, edit checklist templates, or add team members, subscribe via Dodo Payments.",
+  description = "You can inspect all templates for free. To submit daily shift reports, edit checklist templates, or add team members, please activate your subscription.",
   organizationId,
 }: PaywallModalProps) {
   const [plan, setPlan] = useState<"MONTHLY" | "ANNUAL">("MONTHLY");
@@ -41,7 +41,7 @@ export default function PaywallModal({
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || "Failed to initiate Dodo Payments checkout");
+        throw new Error(data.error || "Failed to initiate payment checkout");
       }
 
       if (data.checkoutUrl) {
@@ -120,7 +120,7 @@ export default function PaywallModal({
                 {title}
               </div>
               <div style={{ fontSize: "0.75rem", color: "#64748b" }}>
-                Verified Dodo Payments Gateway
+                Verified Secure Payment Gateway
               </div>
             </div>
           </div>
@@ -338,7 +338,7 @@ export default function PaywallModal({
                 boxShadow: "0 3px 10px rgba(37, 99, 235, 0.3)",
               }}
             >
-              <span>{loading ? "Launching Dodo Checkout..." : `Subscribe with Dodo (${plan === "MONTHLY" ? "₹500/mo" : "₹5,000/yr"}) →`}</span>
+              <span>{loading ? "Launching Checkout..." : `Subscribe (${plan === "MONTHLY" ? "₹500/mo" : "₹5,000/yr"}) →`}</span>
             </button>
           </div>
         </div>
