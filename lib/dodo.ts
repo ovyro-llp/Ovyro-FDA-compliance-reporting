@@ -84,7 +84,7 @@ export async function createDodoCheckoutSession({
   const client = getDodoClient();
   const product = planInterval === "ANNUAL" ? DODO_CONFIG.products.ANNUAL : DODO_CONFIG.products.MONTHLY;
 
-  const defaultReturn = `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/admin/platform?payment_status=success&session_id={CHECKOUT_SESSION_ID}&org=${organizationId}`;
+  const defaultReturn = `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/admin/platform?payment_status=success&org=${organizationId}`;
 
   const safePhone = formatE164Phone(customerPhone);
   const customerData: { email: string; name: string; phone_number?: string } = {

@@ -98,7 +98,7 @@ export default function BillingClient({ organization, products, userRole }: Bill
         body: JSON.stringify({
           organizationId: org.id,
           planInterval: interval,
-          returnUrl: `${window.location.origin}/onboard/setup?session_id={CHECKOUT_SESSION_ID}`,
+          returnUrl: `${window.location.origin}/admin/billing`,
         }),
       });
 

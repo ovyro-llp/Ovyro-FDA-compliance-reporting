@@ -269,7 +269,7 @@ export default function OnboardClient({
         body: JSON.stringify({
           organizationId: organization.id,
           planInterval: selectedPlan,
-          returnUrl: `${window.location.origin}/onboard/setup?session_id={CHECKOUT_SESSION_ID}`,
+          returnUrl: `${window.location.origin}/onboard/setup`,
         }),
       });
 
